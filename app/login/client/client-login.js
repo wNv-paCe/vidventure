@@ -98,7 +98,7 @@ const ClientLogin = () => {
 
           <div className="text-center mt-4">
             <span className="text-gray-600 text-sm">
-              Don't have an account?
+              Don&apos;t have an account?
             </span>
             <a
               href="#"
