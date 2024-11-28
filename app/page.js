@@ -87,9 +87,10 @@ export default function Home() {
             <p className="text-lg text-gray-700">
               VidVenture is your go-to platform for professional videography
               services. We connect clients with talented videographers to
-              capture life's most precious moments. Whether you're planning a
-              wedding, corporate event, or need a promotional video, our network
-              of skilled professionals is here to bring your vision to life.
+              capture life&apos;s most precious moments. Whether you&apos;re
+              planning a wedding, corporate event, or need a promotional video,
+              our network of skilled professionals is here to bring your vision
+              to life.
             </p>
           </div>
         </div>
