@@ -28,7 +28,7 @@ export default function LoginForm({ userType }) {
     try {
       await loginWithEmail(email, password); // Login with email and password
       console.log(`${userType} login successfully`);
-      router.push(`/${userType}/dashboard`); // Redirect to dashboard
+      router.push(`../${userType}/dashboard`); // Redirect to dashboard
     } catch (err) {
       setError("Login failed: " + err.message);
     }
@@ -38,7 +38,7 @@ export default function LoginForm({ userType }) {
     try {
       await googleSignIn(userType); // Google login
       console.log(`${userType} login successfully`);
-      router.push(`/${userType}/dashboard`); // Redirect to dashboard
+      router.push(`../${userType}/dashboard`); // Redirect to dashboard
     } catch (err) {
       setError("Google login failed: " + err.message);
     }
