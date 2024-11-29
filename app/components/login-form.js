@@ -95,10 +95,16 @@ export default function LoginForm({ userType }) {
         </Button>
       </CardContent>
       <CardContent className="flex justify-between text-sm mt-4">
-        <Link href="/forgot-password" className="text-blue-600 hover:underline">
+        <Link
+          href={`../forgot-password?userType=${userType}`}
+          className="text-blue-600 hover:underline"
+        >
           Forgot Password?
         </Link>
-        <Link href="/signup" className="text-blue-600 hover:underline">
+        <Link
+          href={`../signup?userType=${userType}`}
+          className="text-blue-600 hover:underline"
+        >
           Don&apos;t have an account? Sign up
         </Link>
       </CardContent>
@@ -112,8 +118,8 @@ export default function LoginForm({ userType }) {
           </span>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col gap-2">
-        <Button onClick={handleGoogleLogin} variant="outline">
+      <CardFooter className="flex flex-col">
+        <Button onClick={handleGoogleLogin} className="w-full">
           Login with Google
         </Button>
         {error && <p className="text-red-500 text-center">{error}</p>}

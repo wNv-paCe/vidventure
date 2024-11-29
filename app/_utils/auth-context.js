@@ -12,107 +12,129 @@ import {
 import { auth } from "./firebase";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
+// 创建 AuthContext 和 Firestore 实例
 const AuthContext = createContext();
 const db = getFirestore();
 
+// 辅助函数：获取用户类型
+const getUserType = async (uid) => {
+  const userDocRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userDocRef);
+  return userSnap.exists() ? userSnap.data().type : null;
+};
+
+// 辅助函数：创建新用户到 Firestore
+const createUserInFirestore = async (uid, email, username, userType) => {
+  const userDocRef = doc(db, "users", uid);
+  await setDoc(userDocRef, {
+    email,
+    username,
+    type: userType,
+    createdAt: new Date().toISOString(),
+  });
+};
+
+// 辅助函数：统一错误处理
+const handleError = (error) => {
+  console.error("Firebase Error:", error.message);
+  return { success: false, error: error.message };
+};
+
+// AuthContextProvider
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // From firestore, get the user type
-  const fetchUserType = async (uid) => {
-    if (!uid) {
-      console.error("User ID is required");
-      return null;
-    }
-
+  // 注册用户（邮箱）
+  const registerWithEmail = async (email, password, username, userType) => {
     try {
-      const userDoc = doc(db, "users", uid);
-      const userSnap = await getDoc(userDoc);
+      // 创建 Firebase 用户
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      if (userSnap.exists()) {
-        return userSnap.data().type; // Return the user type
-      } else {
-        console.warn("User document not found in Firestore:", uid);
-        return null;
-      }
-    } catch (err) {
-      console.error("Error fetching user type: ", err.message);
-      return null;
-    }
-  };
+      // 存储用户信息到 Firestore
+      await createUserInFirestore(result.user.uid, email, username, userType);
 
-  // Google Sign In
-  const googleSignIn = async (userType) => {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const loggedUser = result.user;
-
-    try {
-      const userDocRef = doc(db, "users", loggedUser.uid); // Get user document
-      const userSnap = await getDoc(userDocRef);
-
-      if (!userSnap.exists()) {
-        // if user does not exist in firestore, create a new user
-        await setDoc(userDocRef, {
-          email: loggedUser.email,
-          type: userType, // set user type
-          createdAt: new Date().toISOString(),
-        });
-        console.log(`New ${userType} user created in Firestore`);
-      } else {
-        console.log("User already exists in Firestore");
-      }
-
-      // set user and user type
-      setUser(loggedUser);
+      // 设置用户状态
+      setUser(result.user);
       setUserType(userType);
-    } catch (err) {
-      console.error("Error during Google Sign-In:", err.message);
+
+      return { success: true };
+    } catch (error) {
+      return handleError(error);
     }
   };
 
-  // Email Sign Up
-  const registerWithEmail = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  // Email Sign In
+  // 登录用户（邮箱）
   const loginWithEmail = async (email, password) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    const loggedUser = result.user;
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
 
-    // Fetch user type from firestore
-    const type = await fetchUserType(loggedUser.uid);
-    setUser(loggedUser);
-    setUserType(type);
+      // 从 Firestore 获取用户类型
+      const type = await getUserType(result.user.uid);
+
+      // 设置用户状态
+      setUser(result.user);
+      setUserType(type);
+
+      return { success: true };
+    } catch (error) {
+      return handleError(error);
+    }
   };
 
-  // Sign Out
+  // 登录用户（Google）
+  const googleSignIn = async (userType) => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+
+      // 检查用户是否已存在 Firestore
+      const existingType = await getUserType(result.user.uid);
+
+      if (!existingType) {
+        // 如果用户不存在，创建新用户
+        await createUserInFirestore(
+          result.user.uid,
+          result.user.email,
+          null,
+          userType
+        );
+      }
+
+      // 设置用户状态
+      setUser(result.user);
+      setUserType(userType || existingType);
+
+      return { success: true };
+    } catch (error) {
+      return handleError(error);
+    }
+  };
+
+  // 登出用户
   const firebaseSignOut = async () => {
-    await signOut(auth);
-    setUser(null);
-    setUserType(null);
+    try {
+      await signOut(auth);
+      setUser(null);
+      setUserType(null);
+    } catch (error) {
+      console.error("Error signing out:", error.message);
+    }
   };
 
+  // 监听用户状态变化
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        try {
-          const userDocRef = doc(db, "users", currentUser.uid);
-          const userSnap = await getDoc(userDocRef);
-
-          if (userSnap.exists()) {
-            const type = userSnap.data().type;
-            setUserType(type);
-            setUser(currentUser);
-          } else {
-            console.warn("User document not found.");
-          }
-        } catch (err) {
-          console.error("Error fetching user type: ", err.message);
-        }
+        // 获取用户类型并设置状态
+        const type = await getUserType(currentUser.uid);
+        setUser(currentUser);
+        setUserType(type);
       } else {
         setUser(null);
         setUserType(null);
@@ -128,9 +150,9 @@ export const AuthContextProvider = ({ children }) => {
       value={{
         user,
         userType,
-        googleSignIn,
         registerWithEmail,
         loginWithEmail,
+        googleSignIn,
         firebaseSignOut,
       }}
     >
@@ -139,6 +161,7 @@ export const AuthContextProvider = ({ children }) => {
   );
 };
 
+// 自定义 Hook
 export const useUserAuth = () => {
   return useContext(AuthContext);
 };
