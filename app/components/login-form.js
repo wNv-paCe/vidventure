@@ -51,7 +51,9 @@ export default function LoginForm({ userType }) {
           {userType === "client" ? "Client" : "Videographer"} Login
         </CardTitle>
         <CardDescription>
-          Enter your credentials to access your account
+          {userType === "client"
+            ? "Enter your credentials to access your account as a Client."
+            : "Enter your credentials to access your account as a Videographer."}
         </CardDescription>
       </CardHeader>
       <CardContent>
