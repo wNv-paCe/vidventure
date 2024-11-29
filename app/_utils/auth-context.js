@@ -10,7 +10,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "./firebase";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
 const db = getFirestore();
@@ -34,9 +34,9 @@ export const AuthContextProvider = ({ children }) => {
       if (userSnap.exists()) {
         return userSnap.data().type; // Return the user type
       } else {
-        console.error("User not found");
+        console.warn("User document not found in Firestore:", uid);
+        return null;
       }
-      return null;
     } catch (err) {
       console.error("Error fetching user type: ", err.message);
       return null;
@@ -44,15 +44,33 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   // Google Sign In
-  const googleSignIn = async () => {
+  const googleSignIn = async (userType) => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const loggedUser = result.user;
 
-    // Fetch user type from firestore
-    const type = await fetchUserType(loggedUser.uid);
-    setUser(loggedUser);
-    setUserType(type);
+    try {
+      const userDocRef = doc(db, "users", loggedUser.uid); // Get user document
+      const userSnap = await getDoc(userDocRef);
+
+      if (!userSnap.exists()) {
+        // if user does not exist in firestore, create a new user
+        await setDoc(userDocRef, {
+          email: loggedUser.email,
+          type: userType, // set user type
+          createdAt: new Date().toISOString(),
+        });
+        console.log(`New ${userType} user created in Firestore`);
+      } else {
+        console.log("User already exists in Firestore");
+      }
+
+      // set user and user type
+      setUser(loggedUser);
+      setUserType(userType);
+    } catch (err) {
+      console.error("Error during Google Sign-In:", err.message);
+    }
   };
 
   // Email Sign Up
@@ -82,10 +100,16 @@ export const AuthContextProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         try {
-          // if user is logged in, fetch user type
-          const type = await fetchUserType(currentUser.uid);
-          setUserType(type);
-          setUser(currentUser);
+          const userDocRef = doc(db, "users", currentUser.uid);
+          const userSnap = await getDoc(userDocRef);
+
+          if (userSnap.exists()) {
+            const type = userSnap.data().type;
+            setUserType(type);
+            setUser(currentUser);
+          } else {
+            console.warn("User document not found.");
+          }
         } catch (err) {
           console.error("Error fetching user type: ", err.message);
         }
@@ -95,6 +119,7 @@ export const AuthContextProvider = ({ children }) => {
       }
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 

@@ -36,8 +36,8 @@ export default function LoginForm({ userType }) {
 
   const handleGoogleLogin = async () => {
     try {
-      await googleSignIn(); // Google login
-      console.log("Google login successful");
+      await googleSignIn(userType); // Google login
+      console.log(`${userType} login successfully`);
       router.push(`/${userType}/dashboard`); // Redirect to dashboard
     } catch (err) {
       setError("Google login failed: " + err.message);
