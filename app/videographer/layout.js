@@ -9,17 +9,18 @@ export default function ClientLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      // if user is not logged in, redirect to login page
-      router.push("../login/videographer");
-    } else if (userType !== "videographer") {
-      // if user is not a videographer, redirect to login
-      router.push("../login/videographer");
+    if (!user || userType !== "videographer") {
+      // if user is not logged in and not a videographer, redirect to videographer login
+      router.push("/login/videographer");
     }
   }, [user, userType, router]);
 
   if (!user || userType !== "videographer") {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Redirecting to login...</p>
+      </div>
+    );
   }
 
   return (

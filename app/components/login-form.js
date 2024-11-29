@@ -25,22 +25,43 @@ export default function LoginForm({ userType }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Clear error message
+
     try {
-      await loginWithEmail(email, password); // Login with email and password
-      console.log(`${userType} login successfully`);
-      router.push(`../${userType}/dashboard`); // Redirect to dashboard
+      const result = await loginWithEmail(email, password); // Login with email and password
+      if (result.success) {
+        if (result.type !== userType) {
+          // 检查返回的用户类型是否与当前页面的类型一致
+          setError(
+            `You are trying to log in as a ${userType}, but your account is registered as a ${result.type}. Please log in with the correct user type.`
+          );
+          return;
+        }
+        console.log(`${userType} login successfully`);
+        router.push(`/${userType}/dashboard`); // 跳转到对应用户仪表盘
+      } else {
+        // 如果登录返回失败，显示错误信息
+        setError(result.error);
+      }
     } catch (err) {
-      setError("Login failed: " + err.message);
+      setError(`Login failed: ${err.message || "Unknown error occurred"}`);
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
-      await googleSignIn(userType); // Google login
-      console.log(`${userType} login successfully`);
-      router.push(`../${userType}/dashboard`); // Redirect to dashboard
+      const result = await googleSignIn(userType); // Google login
+
+      if (result.success) {
+        console.log(`${userType} login successfully`);
+        router.push(`/${userType}/dashboard`);
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
-      setError("Google login failed: " + err.message);
+      setError(
+        `Google login failed: ${err.message || "Unknown error occurred"}`
+      );
     }
   };
 
@@ -57,7 +78,11 @@ export default function LoginForm({ userType }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {error && <p className="text-red-500 text-sm">{error}</p>}{" "}
+        {error && (
+          <p className="text-red-500 mb-4 bg-red-50 border border-red-300 px-4 py-2 rounded">
+            {error}
+          </p>
+        )}
         {/* Display error message */}
         <form onSubmit={handleSubmit}>
           <div className="grid w-full items-center gap-4">
@@ -122,7 +147,6 @@ export default function LoginForm({ userType }) {
         <Button onClick={handleGoogleLogin} className="w-full">
           Login with Google
         </Button>
-        {error && <p className="text-red-500 text-center">{error}</p>}
       </CardFooter>
     </Card>
   );

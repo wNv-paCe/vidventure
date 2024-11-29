@@ -11,7 +11,7 @@ export default function ClientDashboard() {
   const handleLogout = async () => {
     try {
       await firebaseSignOut();
-      router.push("../../login/client");
+      router.push("/login/client");
     } catch (err) {
       console.error("Logout failed: ", err);
     }

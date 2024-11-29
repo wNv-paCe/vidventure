@@ -9,17 +9,19 @@ export default function ClientLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      // if user is not logged in, redirect to login page
-      router.push("../login/client");
-    } else if (userType !== "client") {
-      // if user is not a client, redirect to login
-      router.push("../login/client");
+    if (!user || userType !== "client") {
+      // if user is not logged in and not a client, redirect to client login
+      router.push("/login/client");
     }
   }, [user, userType, router]);
 
+  // if user is not logged in or not a client, show loading message
   if (!user || userType !== "client") {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Redirecting to login...</p>
+      </div>
+    );
   }
 
   return (

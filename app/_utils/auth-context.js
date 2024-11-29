@@ -20,7 +20,12 @@ const db = getFirestore();
 const getUserType = async (uid) => {
   const userDocRef = doc(db, "users", uid);
   const userSnap = await getDoc(userDocRef);
-  return userSnap.exists() ? userSnap.data().type : null;
+
+  if (userSnap.exists()) {
+    return userSnap.data().type; // return user type if user exists
+  }
+
+  return null; // if user does not exist
 };
 
 // 辅助函数：创建新用户到 Firestore
@@ -36,8 +41,20 @@ const createUserInFirestore = async (uid, email, username, userType) => {
 
 // 辅助函数：统一错误处理
 const handleError = (error) => {
-  console.error("Firebase Error:", error.message);
-  return { success: false, error: error.message };
+  console.error("Error:", error.message);
+
+  // 用户友好的错误提示
+  const errorMap = {
+    "auth/user-not-found": "No account found with this email.",
+    "auth/wrong-password": "Incorrect password. Please try again.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+  };
+
+  return {
+    success: false,
+    error:
+      errorMap[error.code] || error.message || "An unknown error occurred.",
+  };
 };
 
 // AuthContextProvider
@@ -77,11 +94,15 @@ export const AuthContextProvider = ({ children }) => {
       // 从 Firestore 获取用户类型
       const type = await getUserType(result.user.uid);
 
+      if (!type) {
+        throw new Error("User type not found. Please register first.");
+      }
+
       // 设置用户状态
       setUser(result.user);
       setUserType(type);
 
-      return { success: true };
+      return { success: true, type };
     } catch (error) {
       return handleError(error);
     }
@@ -93,25 +114,30 @@ export const AuthContextProvider = ({ children }) => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      // 检查用户是否已存在 Firestore
-      const existingType = await getUserType(result.user.uid);
+      const { uid, email } = result.user;
 
-      if (!existingType) {
-        // 如果用户不存在，创建新用户
-        await createUserInFirestore(
-          result.user.uid,
-          result.user.email,
-          null,
-          userType
+      // Check if user exists and has the correct type
+      const existingType = await getUserType(uid);
+
+      if (existingType && existingType !== userType) {
+        // if user exists but with different type
+        throw new Error(
+          `Google account is already registered as a ${existingType}. Please log in with the correct account type.`
         );
       }
 
-      // 设置用户状态
+      if (!existingType) {
+        // if user does not exist, create user in Firestore
+        await createUserInFirestore(uid, email, null, userType);
+      }
+
+      // set user and user type
       setUser(result.user);
       setUserType(userType || existingType);
 
       return { success: true };
     } catch (error) {
+      console.error("Error during Google Sign-In:", error.message);
       return handleError(error);
     }
   };

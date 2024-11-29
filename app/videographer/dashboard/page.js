@@ -11,7 +11,7 @@ export default function VideographerDashboard() {
   const handleLogout = async () => {
     try {
       await firebaseSignOut();
-      router.push("../../login/videographer");
+      router.push("/login/videographer");
     } catch (error) {
       console.error("Failed to logout:", error.message);
     }
