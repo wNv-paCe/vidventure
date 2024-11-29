@@ -46,8 +46,14 @@ const handleError = (error) => {
   // 用户友好的错误提示
   const errorMap = {
     "auth/user-not-found": "No account found with this email.",
-    "auth/wrong-password": "Incorrect password. Please try again.",
-    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/invalid-credential":
+      "Invalid credentials. Please check your email and password.",
+    "auth/too-many-requests":
+      "Too many login attempts. Please try again later.",
+    "auth/popup-closed-by-user":
+      "Google Sign-In was canceled. Please try again.",
+    "auth/network-request-failed":
+      "Network error. Please check your connection.",
   };
 
   return {
@@ -87,7 +93,7 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   // 登录用户（邮箱）
-  const loginWithEmail = async (email, password) => {
+  const loginWithEmail = async (email, password, expectedUserType) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
 
@@ -95,7 +101,18 @@ export const AuthContextProvider = ({ children }) => {
       const type = await getUserType(result.user.uid);
 
       if (!type) {
-        throw new Error("User type not found. Please register first.");
+        return {
+          success: false,
+          error: "User type not found. Please register first.",
+        };
+      }
+
+      // 检查用户类型是否匹配
+      if (type !== expectedUserType) {
+        return {
+          success: false,
+          error: `You are trying to log in as a ${expectedUserType}, but your account is registered as a ${type}. Please log in with the correct user type.`,
+        };
       }
 
       // 设置用户状态
@@ -109,7 +126,7 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   // 登录用户（Google）
-  const googleSignIn = async (userType) => {
+  const googleSignIn = async (expectedUserType) => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -119,23 +136,24 @@ export const AuthContextProvider = ({ children }) => {
       // Check if user exists and has the correct type
       const existingType = await getUserType(uid);
 
-      if (existingType && existingType !== userType) {
+      if (existingType && existingType !== expectedUserType) {
         // if user exists but with different type
-        throw new Error(
-          `Google account is already registered as a ${existingType}. Please log in with the correct account type.`
-        );
+        return {
+          success: false,
+          error: `Google account is already registered as a ${existingType}. Please log in with the correct account type.`,
+        };
       }
 
       if (!existingType) {
         // if user does not exist, create user in Firestore
-        await createUserInFirestore(uid, email, null, userType);
+        await createUserInFirestore(uid, email, null, expectedUserType);
       }
 
       // set user and user type
       setUser(result.user);
-      setUserType(userType || existingType);
+      setUserType(expectedUserType || existingType);
 
-      return { success: true };
+      return { success: true, type: expectedUserType || existingType };
     } catch (error) {
       console.error("Error during Google Sign-In:", error.message);
       return handleError(error);
