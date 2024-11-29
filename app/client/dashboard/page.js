@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useUserAuth } from "../_utils/auth-context";
+import { useUserAuth } from "@/app/_utils/auth-context";
 import { useRouter } from "next/navigation";
 
 export default function ClientDashboard() {
@@ -11,7 +11,7 @@ export default function ClientDashboard() {
   const handleLogout = async () => {
     try {
       await firebaseSignOut();
-      router.push("../login/client");
+      router.push("../../login/client");
     } catch (err) {
       console.error("Logout failed: ", err);
     }
