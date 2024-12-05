@@ -25,9 +25,9 @@ export default function ClientLayout({ children }) {
 
   return (
     <div>
-      <header className="bg-gray-800 text-white p-4">
+      {/* <header className="bg-gray-800 text-white p-4">
         <h1>Videographer Portal</h1>
-      </header>
+      </header> */}
       <main>{children}</main>
     </div>
   );
