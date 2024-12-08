@@ -13,12 +13,12 @@ export default function MessagesPage() {
   const searchParams = useSearchParams(); // 解析 URL 参数
   const [selectedReceiverId, setSelectedReceiverId] = useState(null); // 当前选中的接收方 ID
 
-  // 等待用户登录
-  if (!user) {
-    return <p>Loading...</p>;
-  }
-
   useEffect(() => {
+    // 等待用户登录
+    if (!user) {
+      return <p>Loading...</p>;
+    }
+
     // 从 URL 参数中获取 receiverId
     const receiverId = searchParams.get("receiverId");
     if (receiverId) {

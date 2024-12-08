@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export default function PortfolioItem({ item, onEdit, onDelete }) {
@@ -8,9 +9,11 @@ export default function PortfolioItem({ item, onEdit, onDelete }) {
     <div className="border rounded-lg shadow-sm p-4 bg-white">
       {/* Thumbnail */}
       {item.thumbnailUrl && (
-        <img
+        <Image
           src={item.thumbnailUrl}
           alt={`${item.title} thumbnail`}
+          width={500}
+          height={300}
           className="w-full h-40 object-cover rounded-md mb-4"
         />
       )}
