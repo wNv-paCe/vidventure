@@ -1,40 +1,66 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+"use client";
 
-export default function Search() {
-  const videographers = [
-    { id: 1, name: "John Doe", specialization: "Wedding Videography" },
-    { id: 2, name: "Jane Smith", specialization: "Corporate Events" },
-    { id: 3, name: "Mike Johnson", specialization: "Music Videos" },
-  ];
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { db } from "@/app/_utils/firebase";
+import SearchForm from "./search-form";
+import SearchResults from "./search-results";
+
+// Capitalize the first letter of each word
+function capitalizeWords(name) {
+  return name
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+export default function SearchPage() {
+  const [portfolios, setPortfolios] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load portfolios from Firestore
+  const fetchPortfolios = async (searchTerm = "") => {
+    setLoading(true);
+    try {
+      let q;
+      if (searchTerm) {
+        // Capitalize the search term
+        const formattedSearchTerm = capitalizeWords(searchTerm);
+
+        // Basic search by name
+        q = query(
+          collection(db, "portfolios"),
+          where("fullName", ">=", formattedSearchTerm),
+          where("fullName", "<=", formattedSearchTerm + "\uf8ff")
+        );
+      } else {
+        // Default: get all portfolios
+        q = query(collection(db, "portfolios"), orderBy("createdAt", "desc"));
+      }
+      const querySnapshot = await getDocs(q);
+      const items = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPortfolios(items);
+    } catch (error) {
+      console.error("Error fetching portfolios:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch portfolios on initial load
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Search Videographers</h1>
-      <div className="mb-6">
-        <Input
-          type="text"
-          placeholder="Search by name or specialization"
-          className="w-full"
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videographers.map((videographer) => (
-          <Card key={videographer.id}>
-            <CardHeader>
-              <CardTitle>{videographer.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">
-                Specialization: {videographer.specialization}
-              </p>
-              <Button>View Profile</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <h1 className="text-3xl font-bold mb-6">Search Portfolios</h1>
+      <SearchForm onSearch={fetchPortfolios} />
+      {loading ? <p>Loading...</p> : <SearchResults results={portfolios} />}
     </div>
   );
 }
