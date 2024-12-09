@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { db } from "@/app/_utils/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 
 export default function MessageSender({ userId, receiverId, onMessageSent }) {
   const [message, setMessage] = useState("");
@@ -12,11 +12,17 @@ export default function MessageSender({ userId, receiverId, onMessageSent }) {
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
-    const messageData = {
+    const senderMessageData = {
       from: userId,
       to: receiverId,
       content: message.trim(),
       date: new Date().toISOString(),
+      read: true,
+    };
+
+    const receiverMessageData = {
+      ...senderMessageData,
+      read: false,
     };
 
     console.log("User ID:", userId);
@@ -36,7 +42,7 @@ export default function MessageSender({ userId, receiverId, onMessageSent }) {
         receiverId,
         "chats"
       );
-      await addDoc(senderMessagesRef, messageData);
+      await addDoc(senderMessagesRef, senderMessageData);
 
       // Write message to receiver's collection
       const receiverMessagesRef = collection(
@@ -47,7 +53,27 @@ export default function MessageSender({ userId, receiverId, onMessageSent }) {
         userId,
         "chats"
       );
-      await addDoc(receiverMessagesRef, messageData);
+      await addDoc(receiverMessagesRef, receiverMessageData);
+
+      // Update summary for the current user
+      const userSummaryRef = doc(db, "users", userId, "messages", receiverId);
+      await updateDoc(userSummaryRef, {
+        lastMessage: message,
+        lastMessageDate: new Date().toISOString(),
+      });
+
+      // Update summary for the receiver
+      const receiverSummaryRef = doc(
+        db,
+        "users",
+        receiverId,
+        "messages",
+        userId
+      );
+      await updateDoc(receiverSummaryRef, {
+        lastMessage: message,
+        lastMessageDate: new Date().toISOString(),
+      });
 
       setMessage(""); // Clear input field
       if (onMessageSent) onMessageSent(messageData); // Notify parent

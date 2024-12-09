@@ -127,8 +127,8 @@ export default function Requests() {
                 </p>
                 <div className="flex w-1/2 justify-start space-x-4">
                   <ContactButton
-                    videographerId={request.videographerId}
-                    videographerName={request.videographerName}
+                    otherUserId={request.videographerId}
+                    otherUserName={request.videographerName}
                     onSuccess={() =>
                       router.push(
                         `/client/messages?videographerId=${request.videographerId}`
@@ -140,7 +140,7 @@ export default function Requests() {
                       onClick={() =>
                         handleCancelRequest(request.id, request.videographerId)
                       }
-                      className="flex-1 bg-red-500 text-white rounded-md py-2 hover:bg-red-600"
+                      className="w-28 bg-red-500 text-white rounded-md py-2 hover:bg-red-600"
                     >
                       Cancel
                     </Button>

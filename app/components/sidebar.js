@@ -24,8 +24,6 @@ const Sidebar = ({ userType }) => {
     { href: "/client/search", label: "Search Videographers", icon: Search },
     { href: "/client/requests", label: "My Requests", icon: FileText },
     { href: "/client/messages", label: "Messages", icon: MessageSquare },
-    { href: "/client/favorites", label: "My Favorites", icon: Star },
-    { href: "/client/bookings", label: "Bookings", icon: Calendar },
     { href: "/client/profile", label: "Profile", icon: UserCircle },
   ];
 

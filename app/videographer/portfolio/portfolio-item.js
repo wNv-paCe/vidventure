@@ -40,10 +40,15 @@ export default function PortfolioItem({ item, onEdit, onDelete }) {
 
       {/* Action Buttons */}
       <div className="flex justify-between">
-        <Button variant="outline" size="sm" onClick={onEdit}>
+        <Button className="w-28" variant="outline" size="sm" onClick={onEdit}>
           Edit
         </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
+        <Button
+          className="w-28"
+          variant="destructive"
+          size="sm"
+          onClick={onDelete}
+        >
           Delete
         </Button>
       </div>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import EditUserField from "../../components/edit-user-field";
+import EditUserField from "@/app/components/edit-user-field";
 import DeleteAccount from "@/app/components/delete-account";
 
 export default function Profile() {
