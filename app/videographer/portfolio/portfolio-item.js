@@ -8,15 +8,13 @@ export default function PortfolioItem({ item, onEdit, onDelete }) {
   return (
     <div className="border rounded-lg shadow-sm p-4 bg-white">
       {/* Thumbnail */}
-      {item.thumbnailUrl && (
-        <Image
-          src={item.thumbnailUrl}
-          alt={`${item.title} thumbnail`}
-          width={500}
-          height={300}
-          className="w-full h-40 object-cover rounded-md mb-4"
-        />
-      )}
+      <Image
+        src={item.thumbnailUrl || "https://via.placeholder.com/150"}
+        alt={item.title}
+        width={500}
+        height={300}
+        className="w-full h-40 object-cover rounded-md mb-4"
+      />
 
       {item.url && (
         <a
