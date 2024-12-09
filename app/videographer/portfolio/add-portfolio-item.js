@@ -148,6 +148,7 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="John Doe"
+              required
             />
           </div>
           <div className="flex justify-end space-x-4">
