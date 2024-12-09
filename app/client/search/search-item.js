@@ -20,10 +20,10 @@ export default function SearchItem({ item }) {
       <h3 className="text-lg font-bold">{item.title}</h3>
       <p className="text-sm text-gray-600">{item.fullName}</p>
       <p className="text-gray-500 text-sm">{item.description}</p>
-      <div className="mt-4 flex space-x-4">
+      <div className="mt-4 flex justify-around space-x-4">
         <ContactButton
-          videographerId={item.userId}
-          videographerName={item.fullName}
+          otherUserId={item.userId}
+          otherUserName={item.fullName}
         />
         <CreateRequest
           videographerId={item.userId}

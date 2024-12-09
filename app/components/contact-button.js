@@ -6,7 +6,11 @@ import { db } from "@/app/_utils/firebase";
 import { collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { useUserAuth } from "@/app/_utils/auth-context";
 
-export default function ContactButton({ videographerId, videographerName }) {
+export default function ContactButton({
+  otherUserId,
+  otherUserName,
+  userType,
+}) {
   const { user } = useUserAuth();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
@@ -16,7 +20,7 @@ export default function ContactButton({ videographerId, videographerName }) {
 
   const handleSendMessage = async () => {
     if (!user) {
-      alert("Please log in to contact the videographer.");
+      alert("Please log in to contact the user.");
       return;
     }
 
@@ -26,71 +30,70 @@ export default function ContactButton({ videographerId, videographerName }) {
     }
 
     try {
-      const messageId = `${user.uid}_${videographerId}_${Date.now()}`;
+      const messageId = `${user.uid}_${otherUserId}_${Date.now()}`;
       const currentDate = new Date().toISOString();
-      const initialMessage = {
+
+      // Message for the current user's collection
+      const currentUserMessage = {
         id: messageId,
         from: user.uid,
-        to: videographerId,
+        to: otherUserId,
         title,
         content,
         date: currentDate,
-        read: false,
+        read: true, // Current user's message marked as read
+      };
+
+      // Message for the other user's collection
+      const otherUserMessage = {
+        id: messageId,
+        from: user.uid,
+        to: otherUserId,
+        title,
+        content,
+        date: currentDate,
+        read: false, // Other user's message marked as unread
       };
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const senderName = userDoc.exists()
-        ? userDoc.data().username || userDoc.email || "Unknown User"
+        ? userDoc.data().username || userDoc.data().email || "Unknown User"
         : user.email || "Unknown User";
 
-      // Add message to Firestore (client's collection)
+      // Add message to Firestore (current user's collection)
       await setDoc(
         doc(
-          collection(
-            db,
-            "users",
-            user.uid,
-            "messages",
-            videographerId,
-            "chats"
-          ),
+          collection(db, "users", user.uid, "messages", otherUserId, "chats"),
           messageId
         ),
-        initialMessage
+        currentUserMessage
       );
 
-      // Add message to Firestore (videographer's collection)
+      // Add message to Firestore (other user's collection)
       await setDoc(
         doc(
-          collection(
-            db,
-            "users",
-            videographerId,
-            "messages",
-            user.uid,
-            "chats"
-          ),
+          collection(db, "users", otherUserId, "messages", user.uid, "chats"),
           messageId
         ),
-        initialMessage
+        otherUserMessage
       );
 
-      // Update client's messages summary
-      const clientSummary = {
+      // Update current user's messages summary
+      const currentUserSummary = {
         title,
         lastMessage: content,
         lastMessageDate: currentDate,
-        receiverId: videographerId,
-        receiverName: videographerName,
+        receiverId: otherUserId,
+        receiverName: otherUserName,
       };
       await setDoc(
-        doc(db, "users", user.uid, "messages", videographerId),
-        clientSummary,
+        doc(db, "users", user.uid, "messages", otherUserId),
+        currentUserSummary,
         { merge: true }
       );
 
-      // Update videographer's messages summary
-      const videographerSummary = {
+      // Update other user's messages summary
+      const otherUserSummary = {
         title,
         lastMessage: content,
         lastMessageDate: currentDate,
@@ -98,8 +101,8 @@ export default function ContactButton({ videographerId, videographerName }) {
         receiverName: senderName,
       };
       await setDoc(
-        doc(db, "users", videographerId, "messages", user.uid),
-        videographerSummary,
+        doc(db, "users", otherUserId, "messages", user.uid),
+        otherUserSummary,
         { merge: true }
       );
 
@@ -107,7 +110,13 @@ export default function ContactButton({ videographerId, videographerName }) {
       setShowModal(false);
       setTitle("");
       setContent("");
-      router.push(`/client/messages?photographerId=${videographerId}`);
+
+      // Navigate to the appropriate messages page based on userType
+      const messagesPath =
+        userType === "videographer"
+          ? "/videographer/messages"
+          : "/client/messages";
+      router.push(`${messagesPath}?receiverId=${otherUserId}`);
     } catch (err) {
       console.error("Error sending message:", err);
       alert("Failed to send the message. Please try again.");
@@ -118,7 +127,7 @@ export default function ContactButton({ videographerId, videographerName }) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="flex-1 bg-gray-800 text-white rounded-md py-2 hover:bg-gray-900"
+        className="w-28 bg-gray-800 text-white rounded-md py-2 hover:bg-gray-900"
       >
         Contact
       </button>
@@ -126,9 +135,7 @@ export default function ContactButton({ videographerId, videographerName }) {
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
-            <h2 className="text-xl font-bold mb-4">
-              Contact {videographerName}
-            </h2>
+            <h2 className="text-xl font-bold mb-4">Contact {otherUserName}</h2>
             {errorMessage && (
               <p className="text-red-500 text-sm mb-2">{errorMessage}</p>
             )}

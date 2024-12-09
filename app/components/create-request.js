@@ -102,7 +102,7 @@ export default function CreateRequest({
   return (
     <button
       onClick={handleCreateRequest}
-      className="flex-1 bg-red-500 text-white rounded-md py-2 hover:bg-red-600"
+      className="w-28 bg-red-500 text-white rounded-md py-2 hover:bg-red-600"
     >
       Request
     </button>
