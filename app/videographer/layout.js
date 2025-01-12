@@ -24,4 +24,3 @@ export default function VideographerLayout({ children }) {
   }
 
   return <DashboardLayout userType="videographer">{children}</DashboardLayout>;
-}
