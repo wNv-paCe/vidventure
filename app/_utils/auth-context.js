@@ -152,22 +152,41 @@ export const AuthContextProvider = ({ children }) => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      const { uid, email } = result.user;
+      const { uid, email, displayName } = result.user;
+
+      // Get user info from Firestore
+      const userDocRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userDocRef);
+
+      let existingType = null;
+      let username = null;
+
+      // If user exists, get user type and username
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        existingType = userData.type;
+        username = userData.username;
+      }
 
       // Check if user exists and has the correct type
-      const existingType = await getUserType(uid);
-
       if (existingType && existingType !== expectedUserType) {
-        // if user exists but with different type
         return {
           success: false,
           error: `Google account is already registered as a ${existingType}. Please log in with the correct account type.`,
         };
       }
 
-      if (!existingType) {
+      // Check if user exists and has no username
+      if (!userSnap.exists() || !username) {
+        // set username to Google display name or email username
+        username = displayName || email.split("@")[0];
+
         // if user does not exist, create user in Firestore
-        await createUserInFirestore(uid, email, null, expectedUserType);
+        await createUserInFirestore(uid, email, username, expectedUserType);
+
+        console.log(
+          `User created/Updated in Firestore with username: ${username}.`
+        );
       }
 
       // set user and user type
