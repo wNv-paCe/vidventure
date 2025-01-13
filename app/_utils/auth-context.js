@@ -2,12 +2,14 @@
 
 import { useContext, createContext, useState, useEffect } from "react";
 import {
+  getAuth,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
@@ -73,11 +75,16 @@ export const AuthContextProvider = ({ children }) => {
   const registerWithEmail = async (email, password, username, userType) => {
     try {
       // 创建 Firebase 用户
+      const auth = getAuth();
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
+
+      // Send email verification
+      await sendEmailVerification(result.user);
+      console.log("Verification email sent.");
 
       // 存储用户信息到 Firestore
       await createUserInFirestore(result.user.uid, email, username, userType);
@@ -86,7 +93,10 @@ export const AuthContextProvider = ({ children }) => {
       setUser(result.user);
       setUserType(userType);
 
-      return { success: true };
+      return {
+        success: true,
+        message: "Registration successful. Please verify your email to log in.",
+      };
     } catch (error) {
       return handleError(error);
     }
@@ -95,7 +105,18 @@ export const AuthContextProvider = ({ children }) => {
   // 登录用户（邮箱）
   const loginWithEmail = async (email, password, expectedUserType) => {
     try {
+      const auth = getAuth();
       const result = await signInWithEmailAndPassword(auth, email, password);
+
+      // Check email verification status
+      if (!auth.currentUser.emailVerified) {
+        console.warn("User email not verified:", result.user); // Print user object
+        return {
+          success: false,
+          user: auth.currentUser, // return user object to resend verification email
+          error: "Your email is not verified. Please check your inbox.",
+        };
+      }
 
       // 从 Firestore 获取用户类型
       const type = await getUserType(result.user.uid);
