@@ -19,6 +19,7 @@ export default function SignupForm({ userType }) {
   const { registerWithEmail } = useUserAuth();
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
   const router = useRouter();
 
   async function handleSubmit(event) {
@@ -48,8 +49,8 @@ export default function SignupForm({ userType }) {
       );
 
       if (result.success) {
+        setSuccessMessage(result.message);
         // Based on the user type, redirect to the respective dashboard
-        router.push(`/${userType}/dashboard`);
       } else {
         setError(result.error);
       }
@@ -58,6 +59,34 @@ export default function SignupForm({ userType }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (successMessage) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-center text-xl font-bold">
+              Verify Your Email
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p>{successMessage}</p>
+            <p>
+              Please check your inbox and verify your email before logging in.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button
+              onClick={() => router.push(`/login/${userType}`)}
+              className="w-full"
+            >
+              Go to Login
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (

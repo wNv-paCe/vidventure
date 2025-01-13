@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "../_utils/auth-context";
+import { getAuth, sendEmailVerification } from "firebase/auth";
 
 export default function LoginForm({ userType }) {
   const { googleSignIn, loginWithEmail } = useUserAuth();
@@ -22,10 +23,14 @@ export default function LoginForm({ userType }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showResendButton, setShowResendButton] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); // Clear error message
+    setShowResendButton(false); // Hide resend button
+    setResendMessage(""); // Clear resend message
 
     try {
       const result = await loginWithEmail(email, password, userType); // Login with email and password
@@ -33,11 +38,41 @@ export default function LoginForm({ userType }) {
       if (result.success) {
         console.log(`${userType} login successfully`);
         router.push(`/${userType}/dashboard`);
+      } else if (
+        result.error === "Your email is not verified. Please check your inbox."
+      ) {
+        setError(result.error);
+        setShowResendButton(true); // Show resend button
       } else {
         setError(result.error);
       }
     } catch (err) {
+      console.error("Login failed:", err); // 调试错误信息
       setError(`Login failed: ${err.message} || "Unknown error occurred"}`);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setResendMessage("");
+      setError("");
+
+      const auth = getAuth(); // 获取 Firebase Auth 实例
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        throw new Error("No current user found.");
+      }
+
+      // 使用 sendEmailVerification 方法发送验证邮件
+      await sendEmailVerification(currentUser);
+
+      setResendMessage("Verification email sent. Please check your inbox.");
+    } catch (err) {
+      console.error("Resend verification failed:", err);
+      setError(
+        `Resend verification failed: ${err.message || "Unknown error occurred"}`
+      );
     }
   };
 
@@ -77,6 +112,23 @@ export default function LoginForm({ userType }) {
           </p>
         )}
         {/* Display error message */}
+        {showResendButton && (
+          <div className="text-center mb-4">
+            <Button
+              onClick={() => {
+                console.log("Resend Verification Email Button Clicked"); // 打印按钮点击日志
+                handleResendVerification();
+              }}
+              variant="link"
+              className="text-blue-600"
+            >
+              Resend Verification Email
+            </Button>
+            {resendMessage && (
+              <p className="text-green-500 mt-2">{resendMessage}</p>
+            )}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="grid w-full items-center gap-4">
             <div className="flex flex-col space-y-1.5">
