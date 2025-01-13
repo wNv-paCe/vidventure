@@ -6,22 +6,22 @@ const portfolioItems = [
   {
     id: 1,
     title: "Wedding Bliss",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "/images/wedding-bliss.jpg",
   },
   {
     id: 2,
     title: "Corporate Event",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "/images/corporate-event.jpg",
   },
   {
     id: 3,
     title: "Nature Documentary",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "/images/nature-documentary.jpg",
   },
   {
     id: 4,
     title: "Music Video",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "/images/music-video.png",
   },
 ];
 

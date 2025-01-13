@@ -1,8 +1,9 @@
 "use client";
 
-import { useUserAuth } from "../_utils/auth-context";
+import { useUserAuth } from "@/app/_utils/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import DashboardLayout from "@/app/components/dashboard-layout";
 
 export default function ClientLayout({ children }) {
   const { user, userType } = useUserAuth();
@@ -10,12 +11,10 @@ export default function ClientLayout({ children }) {
 
   useEffect(() => {
     if (!user || userType !== "client") {
-      // if user is not logged in and not a client, redirect to client login
       router.push("/login/client");
     }
   }, [user, userType, router]);
 
-  // if user is not logged in or not a client, show loading message
   if (!user || userType !== "client") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,12 +23,5 @@ export default function ClientLayout({ children }) {
     );
   }
 
-  return (
-    <div>
-      <header className="bg-gray-800 text-white p-4">
-        <h1>Client Portal</h1>
-      </header>
-      <main>{children}</main>
-    </div>
-  );
+  return <DashboardLayout userType="client">{children}</DashboardLayout>;
 }
