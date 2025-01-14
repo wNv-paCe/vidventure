@@ -106,7 +106,7 @@ export default function Wallet({ userId }) {
       </div>
 
       {/* 显示银行卡 */}
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <h3 className="font-semibold">Bank Cards</h3>
         <ul className="list-disc ml-5">
           {wallet.cards.map((card) => (
@@ -118,7 +118,44 @@ export default function Wallet({ userId }) {
         <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded" onClick={() => alert("Add card modal")}>
           Add Card
         </button>
+      </div> */}
+
+      {/* 显示银行卡 */}
+<div className="mb-4">
+  <h3 className="font-semibold text-lg mb-4">Bank Cards</h3>
+  <div className="space-y-4">
+    {wallet.cards.map((card) => (
+      <div
+        key={card.id}
+        className="flex items-center justify-between p-4 bg-gray-100 rounded-lg shadow-sm"
+      >
+        {/* 卡片信息 */}
+        <div>
+          <p className="text-sm font-semibold">{card.brand}</p>
+          <p className="text-lg font-bold">
+            **** **** **** {card.last4}
+          </p>
+          <p className="text-sm text-gray-600">Expires {card.expiry}</p>
+        </div>
+        {/* 图标或卡片标识 */}
+        <div className="text-right">
+          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">
+            {card.brand}
+          </span>
+        </div>
       </div>
+    ))}
+  </div>
+
+  {/* 添加银行卡按钮 */}
+  <button
+    className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+    onClick={() => alert("Add card modal")}
+  >
+    Add Card
+  </button>
+</div>
+
 
       {/* 提现按钮 */}
       <button
