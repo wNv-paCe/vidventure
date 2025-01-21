@@ -102,7 +102,7 @@ export default function Wallet({ userId }) {
       <div className="mb-4">
         <p>Total Balance: ${(wallet.totalBalance ).toFixed(2)}</p>
         <p>Locked Amount: ${(wallet.lockedAmount ).toFixed(2)}</p>
-        <p>Available Balance: ${((wallet.totalBalance - wallet.lockedAmount) / 100).toFixed(2)}</p>
+        <p>Available Balance: ${(wallet.totalBalance - wallet.lockedAmount).toFixed(2)}</p>
       </div>
 
       {/* 显示银行卡 */}
