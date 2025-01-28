@@ -67,6 +67,8 @@ export default function Packages() {
 
   
   const [packages, setPackages] = useState([]);
+
+
   const [isAdding, setIsAdding] = useState(false);
   const [newPackage, setNewPackage] = useState({
     title: "",
@@ -102,6 +104,7 @@ export default function Packages() {
     } else {
       console.error("User not authenticated");
     }
+
   };
 
   return (
@@ -155,6 +158,7 @@ export default function Packages() {
       )}
 
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
         {packages.map((pkg) => (
           <Card key={pkg.id}>
             <CardHeader>
@@ -164,6 +168,7 @@ export default function Packages() {
               <p className="mb-2">{pkg.description}</p>
               <p className="mb-4 font-bold">Price: ${pkg.price}</p>
               <img src={pkg.media[0].viewUrl} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
+
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => handleEdit(pkg.id)}>
                   Edit

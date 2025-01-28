@@ -2,12 +2,14 @@
 
 import { useContext, createContext, useState, useEffect } from "react";
 import {
+  getAuth,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
@@ -73,11 +75,16 @@ export const AuthContextProvider = ({ children }) => {
   const registerWithEmail = async (email, password, username, userType) => {
     try {
       // 创建 Firebase 用户
+      const auth = getAuth();
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
+
+      // Send email verification
+      await sendEmailVerification(result.user);
+      console.log("Verification email sent.");
 
       // 存储用户信息到 Firestore
       await createUserInFirestore(result.user.uid, email, username, userType);
@@ -86,7 +93,10 @@ export const AuthContextProvider = ({ children }) => {
       setUser(result.user);
       setUserType(userType);
 
-      return { success: true };
+      return {
+        success: true,
+        message: "Registration successful. Please verify your email to log in.",
+      };
     } catch (error) {
       return handleError(error);
     }
@@ -95,7 +105,18 @@ export const AuthContextProvider = ({ children }) => {
   // 登录用户（邮箱）
   const loginWithEmail = async (email, password, expectedUserType) => {
     try {
+      const auth = getAuth();
       const result = await signInWithEmailAndPassword(auth, email, password);
+
+      // Check email verification status
+      if (!auth.currentUser.emailVerified) {
+        console.warn("User email not verified:", result.user); // Print user object
+        return {
+          success: false,
+          user: auth.currentUser, // return user object to resend verification email
+          error: "Your email is not verified. Please check your inbox.",
+        };
+      }
 
       // 从 Firestore 获取用户类型
       const type = await getUserType(result.user.uid);
@@ -131,22 +152,41 @@ export const AuthContextProvider = ({ children }) => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      const { uid, email } = result.user;
+      const { uid, email, displayName } = result.user;
+
+      // Get user info from Firestore
+      const userDocRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userDocRef);
+
+      let existingType = null;
+      let username = null;
+
+      // If user exists, get user type and username
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        existingType = userData.type;
+        username = userData.username;
+      }
 
       // Check if user exists and has the correct type
-      const existingType = await getUserType(uid);
-
       if (existingType && existingType !== expectedUserType) {
-        // if user exists but with different type
         return {
           success: false,
           error: `Google account is already registered as a ${existingType}. Please log in with the correct account type.`,
         };
       }
 
-      if (!existingType) {
+      // Check if user exists and has no username
+      if (!userSnap.exists() || !username) {
+        // set username to Google display name or email username
+        username = displayName || email.split("@")[0];
+
         // if user does not exist, create user in Firestore
-        await createUserInFirestore(uid, email, null, expectedUserType);
+        await createUserInFirestore(uid, email, username, expectedUserType);
+
+        console.log(
+          `User created/Updated in Firestore with username: ${username}.`
+        );
       }
 
       // set user and user type
