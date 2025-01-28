@@ -1,31 +1,46 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
+import { db } from "@/app/_utils/firebase";
 import { Button } from "@/components/ui/button";
 
-const portfolioItems = [
-  {
-    id: 1,
-    title: "Wedding Bliss",
-    image: "/images/wedding-bliss.jpg",
-  },
-  {
-    id: 2,
-    title: "Corporate Event",
-    image: "/images/corporate-event.jpg",
-  },
-  {
-    id: 3,
-    title: "Nature Documentary",
-    image: "/images/nature-documentary.jpg",
-  },
-  {
-    id: 4,
-    title: "Music Video",
-    image: "/images/music-video.png",
-  },
-];
-
 export default function Home() {
+  const [portfolioItems, setPortfolioItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch portfolio items from Firestore
+  useEffect(() => {
+    async function fetchPortfolio() {
+      try {
+        // Query the 4 portfolio items
+        const portfolioRef = collection(db, "portfolios");
+
+        // Using orderBy and createdAt to get the latest 4 items
+        const q = query(portfolioRef, orderBy("createdAt", "desc"), limit(4));
+
+        const querySnapshot = await getDocs(q);
+
+        const items = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Shuffle the items
+        const shuffledItems = items.sort(() => 0.5 - Math.random());
+
+        setPortfolioItems(shuffledItems);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading portfolio items: ", error);
+        setLoading(false);
+      }
+    }
+
+    fetchPortfolio();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
@@ -56,27 +71,34 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
-            Our Portfolio
+            Featured Portfolio
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {portfolioItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden"
-              >
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
+
+          {loading ? (
+            <p>Loading portfolio...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {portfolioItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                >
+                  <Image
+                    src={item.thumbnailUrl}
+                    alt={item.title}
+                    width={400}
+                    height={300}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-600">{item.fullName}</p>
+                    <p className="text-sm text-gray-700">{item.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white py-12">
