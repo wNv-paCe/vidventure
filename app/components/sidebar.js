@@ -14,6 +14,8 @@ import {
   Clock,
   BookOpen,
   Package,
+  CreditCard,
+  DollarSign,
 } from "lucide-react";
 
 const Sidebar = ({ userType }) => {
@@ -43,6 +45,7 @@ const Sidebar = ({ userType }) => {
     },
     { href: "/videographer/messages", label: "Messages", icon: MessageSquare },
     { href: "/videographer/profile", label: "Profile", icon: UserCircle },
+    { href: "/videographer/wallet", label: "My Wallet", icon: DollarSign },
   ];
 
   const links = userType === "client" ? clientLinks : videographerLinks;
