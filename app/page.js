@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [portfolioItems, setPortfolioItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   // Fetch portfolio items from Firestore
   useEffect(() => {
@@ -81,7 +83,8 @@ export default function Home() {
               {portfolioItems.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg cursor-pointer"
+                  onClick={() => router.push(`/profile/${item.userId}`)}
                 >
                   <Image
                     src={item.thumbnailUrl}
