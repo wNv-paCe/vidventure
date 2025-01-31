@@ -71,7 +71,13 @@ export default function VideographerProfile() {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <button
+            onClick={() => router.push("/")}
+            className="text-blue-500 hover:text-blue-700 font-semibold"
+          >
+            Back to Home
+          </button>
           <h1 className="text-3xl font-bold text-gray-900">
             {videographer?.username || "Videographer"}
           </h1>
