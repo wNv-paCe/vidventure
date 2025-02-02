@@ -49,6 +49,15 @@ export default function Profile() {
     fetchUserData();
   }, [user]);
 
+  // Capitalize each word in a string
+  const capitalizeWords = (name) => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -58,11 +67,24 @@ export default function Profile() {
 
     try {
       const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        fullName: formData.fullName,
-        phone: formData.phone,
-        address: formData.address,
-      });
+
+      const captitalizedFullName = capitalizeWords(formData.fullName);
+
+      await setDoc(
+        userRef,
+        {
+          fullName: captitalizedFullName,
+          phone: formData.phone,
+          address: formData.address,
+        },
+        { merge: true }
+      );
+
+      // Update the form data with the capitalized full name
+      setFormData((prev) => ({
+        ...prev,
+        fullName: captitalizedFullName,
+      }));
 
       setMessage("Profile updated successfully.");
     } catch (err) {
@@ -80,9 +102,12 @@ export default function Profile() {
 
   const handleFieldUpdate = async (field, value) => {
     const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, { [field]: value }, { merge: true });
+
+    const updatedValue = field === "username" ? capitalizeWords(value) : value;
+
+    await setDoc(userRef, { [field]: updatedValue }, { merge: true });
     if (field === "username") {
-      setUsername(value);
+      setUsername(updatedValue);
     }
   };
 

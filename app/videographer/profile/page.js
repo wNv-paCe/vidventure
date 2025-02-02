@@ -58,6 +58,15 @@ export default function Profile() {
     fetchUserData();
   }, [user]);
 
+  // Capitalize each word in a string
+  const capitalizeWords = (name) => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -67,15 +76,24 @@ export default function Profile() {
 
     try {
       const userRef = doc(db, "users", user.uid);
+
+      const captitalizedFullName = capitalizeWords(formData.fullName);
+
       await setDoc(
         userRef,
         {
-          fullName: formData.fullName,
+          fullName: captitalizedFullName,
           bio: formData.bio,
           specialization: formData.specialization,
         },
         { merge: true }
       );
+
+      // Update fullName in state
+      setFormData((prev) => ({
+        ...prev,
+        fullName: captitalizedFullName,
+      }));
 
       setMessage("Profile updated successfully!");
     } catch (err) {
@@ -89,15 +107,6 @@ export default function Profile() {
   const handleAccountDeleted = () => {
     // Redirect to home page after account deletion
     router.push("/");
-  };
-
-  //
-  const capitalizeWords = (name) => {
-    return name
-      .trim()
-      .split(/\s+/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
   };
 
   // Update username in Firestore and update portfolios fullNames
