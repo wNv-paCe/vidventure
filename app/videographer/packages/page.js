@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { collection, doc, addDoc, getDocs, where, updateDoc, query} from "firebase/firestore";
+import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/app/_utils/firebase"; 
 
@@ -35,60 +35,95 @@ export default function Packages() {
   
   const [packages, setPackages] = useState([]);
 
-  const [editPackage, setEditPackage] = useState(null); // 当前正在编辑的套餐
-
-
+  const [editPackageId, setEditPackageId] = useState(null); // 记录正在编辑的 package ID
+  const [editPackageData, setEditPackageData] = useState(null); // 记录当前编辑的数据
 
   const [isAdding, setIsAdding] = useState(false);
   const [newPackage, setNewPackage] = useState({
     title: "",
     description: "",
-    price: 0,
+    price: "",
   });
 
   const handleEdit = (pkg) => {
-    setEditPackage(pkg); // 设置要编辑的套餐
+    setEditPackageId(pkg.id);
+    setEditPackageData({ ...pkg }); // 复制套餐数据
   };
 
+  const handleCancelEdit = () => {
+    setEditPackageId(null);
+    setEditPackageData(null);
+  };
+
+
   const savePackage = async (updatedPackage) => {
-    if (!updatedPackage || !updatedPackage.id) return;
+    if (!editPackageData || !editPackageId) return;
+
+    if (!editPackageData.title || !editPackageData.description) {
+      alert("Title and description cannot be empty");
+      return;
+    }
+
+    if (editPackageData.price < 0) {
+      alert("Price must be 0 or a positive number");
+      return;
+    }
   
     try {
-      const packageRef = doc(db, "servicePackage", updatedPackage.id);
+      const packageRef = doc(db, "servicePackage", editPackageId);
       await updateDoc(packageRef, {
-        title: updatedPackage.title,
-        description: updatedPackage.description,
-        price: updatedPackage.price,
+        title: editPackageData.title,
+        description: editPackageData.description,
+        price: editPackageData.price,
       });
   
       // 更新本地状态
       setPackages((prevPackages) =>
         prevPackages.map((pkg) =>
-          pkg.id === updatedPackage.id ? updatedPackage : pkg
+          pkg.id === editPackageId ? editPackageData : pkg
         )
       );
   
-      setEditPackage(null); // 关闭编辑表单
+      setEditPackageId(null); // 退出编辑模式
+      setEditPackageData(null);
       console.log("Package updated successfully!");
     } catch (error) {
       console.error("Error updating package:", error);
     }
   };
   
+
+
+  const handleDelete = async (id) => {
+    try {
+      // 获取要删除的文档引用
+      const packageRef = doc(db, "servicePackage", id);
   
-
-  // const handleEdit = (id) => {
-  //   // Implement edit functionality
-  //   console.log(`Editing package with id: ${id}`);
-  // };
-
-  const handleDelete = (id) => {
-    setPackages(packages.filter((pkg) => pkg.id !== id));
+      // 删除 Firestore 中的套餐
+      await deleteDoc(packageRef);
+  
+      // 更新本地状态，移除被删除的套餐
+      setPackages((prevPackages) => prevPackages.filter((pkg) => pkg.id !== id));
+  
+      console.log("Package deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting package:", error);
+    }
   };
 
   const addPackage = async (packageData) => {
     const auth = getAuth();
     const userId = auth.currentUser?.uid;
+
+    if (!packageData.title || !packageData.description) {
+      alert("Title and description cannot be empty");
+      return;
+    }
+
+    if (packageData.price < 0) {
+      alert("Price must be 0 or a positive number");
+      return;
+    }
   
     if (userId) {
       const docRef = await addDoc(collection(db, "servicePackage"), {
@@ -102,7 +137,7 @@ export default function Packages() {
         { id: docRef.id, ...packageData, ownerId: userId },
       ]);
 
-      setNewPackage({ title: "", description: "", price: 0 }); // 清空输入框
+      setNewPackage({ title: "", description: "", price: "" }); // 清空输入框
       setIsAdding(false);
       
     } else {
@@ -169,68 +204,66 @@ export default function Packages() {
               <CardTitle>{pkg.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="mb-2">{pkg.description}</p>
-              <p className="mb-4 font-bold">Price: ${pkg.price}</p>
-              <img src={pkg.media?.[0]?.viewUrl || "/default-image.png"} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
-
-              <div className="flex justify-between">
-              <Button variant="outline" onClick={() => handleEdit(pkg)}>Edit</Button>
-
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(pkg.id)}
-                >
-                  Delete
-                </Button>
-              </div>
+              {editPackageId === pkg.id ? (
+                // **编辑模式**
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={editPackageData.title}
+                      onChange={(e) =>
+                        setEditPackageData({ ...editPackageData, title: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={editPackageData.description}
+                      onChange={(e) =>
+                        setEditPackageData({ ...editPackageData, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="price">Price</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={editPackageData.price}
+                      onChange={(e) =>
+                        setEditPackageData({ ...editPackageData, price: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={savePackage}>Save</Button>
+                    <Button variant="outline" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // **正常显示模式**
+                <>
+                  <p className="mb-2">{pkg.description}</p>
+                  <p className="mb-4 font-bold">Price: ${pkg.price}</p>
+                  <img src={pkg.media?.[0]?.viewUrl || "/default-image.png"} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={() => handleEdit(pkg)}>
+                      Edit
+                    </Button>
+                    <Button variant="destructive" onClick={() => handleDelete(pkg.id)}>Delete</Button>
+                  </div>
+                </>
+              )}
             </CardContent>
 
 
           </Card>
         ))}
-
-{editPackage && (
-                <div className="mb-6 p-4 border rounded-md">
-                  <h2 className="text-xl font-bold mb-4">Edit Package</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        value={editPackage.title}
-                        onChange={(e) =>
-                          setEditPackage({ ...editPackage, title: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={editPackage.description}
-                        onChange={(e) =>
-                          setEditPackage({ ...editPackage, description: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="price">Price</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={editPackage.price}
-                        onChange={(e) =>
-                          setEditPackage({ ...editPackage, price: Number(e.target.value) })
-                        }
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => savePackage(editPackage)}>Save</Button>
-                      <Button variant="outline" onClick={() => setEditPackage(null)}>Cancel</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
 
       </div>
