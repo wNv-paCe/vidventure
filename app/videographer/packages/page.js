@@ -6,33 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { collection, doc, getDocs, where, updateDoc, query} from "firebase/firestore";
+import { collection, doc, addDoc, getDocs, where, updateDoc, query} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/app/_utils/firebase"; 
 
 export default function Packages() {
-  // const [packages, setPackages] = useState([
-  //   {
-  //     id: "1",
-  //     title: "Basic Package",
-  //     description: "2 hours of video shooting and basic editing",
-  //     price: 500,
-  //   },
-  //   {
-  //     id: "2",
-  //     title: "Standard Package",
-  //     description:
-  //       "4 hours of video shooting, advanced editing, and highlight reel",
-  //     price: 1000,
-  //   },
-  //   {
-  //     id: "3",
-  //     title: "Premium Package",
-  //     description:
-  //       "Full day coverage, professional editing, highlight reel, and raw footage",
-  //     price: 2000,
-  //   },
-  // ]);
+  
   const fetchUserPackages = async (userId) => {
     const q = query(collection(db, "servicePackage"), where("ownerId", "==", userId));
     const querySnapshot = await getDocs(q);
@@ -43,14 +22,7 @@ export default function Packages() {
     });
     setPackages(fetchedPackages);
   };
-  // const fetchUserPackages = async (userId) => {
-  //   const q = query(collection(db, "servicePackage"), where("ownerId", "==", userId));
-  //   const querySnapshot = await getDocs(q);
   
-  //   // querySnapshot.forEach((doc) => {
-  //   //   console.log(doc.id, " => ", doc.data());
-  //   // });
-  // };
 
   useEffect(() => {
     const auth = getAuth();
@@ -60,13 +32,11 @@ export default function Packages() {
     }
   }, []);
 
-  // const auth = getAuth();
-  // const user = auth.currentUser;
-  // const userId = user.uid;
-  // fetchUserPackages(userId);
-
   
   const [packages, setPackages] = useState([]);
+
+  const [editPackage, setEditPackage] = useState(null); // 当前正在编辑的套餐
+
 
 
   const [isAdding, setIsAdding] = useState(false);
@@ -76,20 +46,45 @@ export default function Packages() {
     price: 0,
   });
 
-  const handleEdit = (id) => {
-    // Implement edit functionality
-    console.log(`Editing package with id: ${id}`);
+  const handleEdit = (pkg) => {
+    setEditPackage(pkg); // 设置要编辑的套餐
   };
+
+  const savePackage = async (updatedPackage) => {
+    if (!updatedPackage || !updatedPackage.id) return;
+  
+    try {
+      const packageRef = doc(db, "servicePackage", updatedPackage.id);
+      await updateDoc(packageRef, {
+        title: updatedPackage.title,
+        description: updatedPackage.description,
+        price: updatedPackage.price,
+      });
+  
+      // 更新本地状态
+      setPackages((prevPackages) =>
+        prevPackages.map((pkg) =>
+          pkg.id === updatedPackage.id ? updatedPackage : pkg
+        )
+      );
+  
+      setEditPackage(null); // 关闭编辑表单
+      console.log("Package updated successfully!");
+    } catch (error) {
+      console.error("Error updating package:", error);
+    }
+  };
+  
+  
+
+  // const handleEdit = (id) => {
+  //   // Implement edit functionality
+  //   console.log(`Editing package with id: ${id}`);
+  // };
 
   const handleDelete = (id) => {
     setPackages(packages.filter((pkg) => pkg.id !== id));
   };
-
-  // const handleAddNew = () => {
-  //   setPackages([...packages, { ...newPackage, id: Date.now().toString() }]);
-  //   setNewPackage({ title: "", description: "", price: 0 });
-  //   setIsAdding(false);
-  // };
 
   const addPackage = async (packageData) => {
     const auth = getAuth();
@@ -101,6 +96,15 @@ export default function Packages() {
         ownerId: userId, // 关联当前用户
       });
       console.log("Package added with ID:", docRef.id);
+      // 更新本地状态，立即显示新套餐
+      setPackages((prevPackages) => [
+        ...prevPackages,
+        { id: docRef.id, ...packageData, ownerId: userId },
+      ]);
+
+      setNewPackage({ title: "", description: "", price: 0 }); // 清空输入框
+      setIsAdding(false);
+      
     } else {
       console.error("User not authenticated");
     }
@@ -152,7 +156,7 @@ export default function Packages() {
                 }
               />
             </div>
-            <Button onClick={handleAddNew}>Add Package</Button>
+            <Button onClick={() => addPackage(newPackage)}>Add Package</Button>
           </div>
         </div>
       )}
@@ -167,12 +171,11 @@ export default function Packages() {
             <CardContent>
               <p className="mb-2">{pkg.description}</p>
               <p className="mb-4 font-bold">Price: ${pkg.price}</p>
-              <img src={pkg.media[0].viewUrl} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
+              <img src={pkg.media?.[0]?.viewUrl || "/default-image.png"} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => handleEdit(pkg.id)}>
-                  Edit
-                </Button>
+              <Button variant="outline" onClick={() => handleEdit(pkg)}>Edit</Button>
+
                 <Button
                   variant="destructive"
                   onClick={() => handleDelete(pkg.id)}
@@ -181,8 +184,55 @@ export default function Packages() {
                 </Button>
               </div>
             </CardContent>
+
+
           </Card>
         ))}
+
+{editPackage && (
+                <div className="mb-6 p-4 border rounded-md">
+                  <h2 className="text-xl font-bold mb-4">Edit Package</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        value={editPackage.title}
+                        onChange={(e) =>
+                          setEditPackage({ ...editPackage, title: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={editPackage.description}
+                        onChange={(e) =>
+                          setEditPackage({ ...editPackage, description: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="price">Price</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        value={editPackage.price}
+                        onChange={(e) =>
+                          setEditPackage({ ...editPackage, price: Number(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => savePackage(editPackage)}>Save</Button>
+                      <Button variant="outline" onClick={() => setEditPackage(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
       </div>
     </div>
   );
