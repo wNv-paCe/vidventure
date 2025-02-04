@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase"; // Firebase 初始化文件
 import { getAuth } from "firebase/auth";
 import { motion } from "framer-motion";
@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 export default function Wallet({ userId }) {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [showAddCardForm, setShowAddCardForm] = useState(false); // 控制表单显示
   const auth = getAuth();
   const user = auth.currentUser;
   userId = user.uid;
@@ -51,8 +53,20 @@ export default function Wallet({ userId }) {
       cardHolder: "",
       type: "Credit",
     });
+    setShowAddCardForm(false); // 隐藏表单
 
     alert("Card added successfully!");
+  };
+
+  const handleRemoveCard = async (card) => {
+    const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+    //alert(card.id);
+    await updateDoc(walletRef, { cards: arrayRemove(card) });
+
+    setWallet((prev) => ({
+      ...prev,
+      cards: prev.cards.filter((c) => c.id !== card.id),
+    }));
   };
 
   const cardVariants = {
@@ -102,7 +116,7 @@ export default function Wallet({ userId }) {
     }
   };
 
-  const handleTopUp = async () => {};
+  const handleTopUp = async () => { };
 
   if (loading) return <div>Loading wallet...</div>;
 
@@ -170,11 +184,41 @@ export default function Wallet({ userId }) {
       </div>
 
 
+      <div className="mt-6">
+        <h3 className="font-semibold text-lg mb-4">Bank Cards</h3>
+        <div className="flex flex-wrap gap-4">
+          {wallet.cards.map((card) => (
+            <motion.div
+              key={card.id}
+              className={`relative w-80 h-48 rounded-xl shadow-lg text-white p-6 ${card.brand === 'Visa' ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-yellow-600 to-yellow-800'} group`}
+              whileHover={{ scale: 1.05 }}
+            >
+              <div className="absolute top-2 right-2 hidden group-hover:block z-10">
+                <button
+                  onClick={() => handleRemoveCard(card)}
+                  className="px-2 py-1 bg-red-500 text-white rounded text-xs"
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="absolute inset-0 flex flex-col justify-between p-4">
+                <p className="text-lg font-semibold">{card.brand}</p>
+                <p className="text-xl font-bold tracking-widest">**** **** **** {card.last4}</p>
+                <div className="flex justify-between text-sm">
+                  <p>Expires {card.expiry}</p>
+                  <p>{card.cardHolder}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
 
-      <div className="m-4">
+
+
+      {/* <div className="m-4">
         <h3 className="font-semibold text-lg mb-4">Bank Cards</h3>
         <div className="space-y-4">
-          {/* 银行卡列表 */}
 
           <div className="flex flex-wrap gap-4">
             {wallet.cards.map((card) => (
@@ -200,64 +244,84 @@ export default function Wallet({ userId }) {
           </div>
 
         </div>
-      </div>
+      </div> */}
 
-      {/* 📌 添加银行卡表单 */}
-      <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-        <h3 className="text-lg font-bold mb-2">Add New Card</h3>
-
-        <label className="block mb-2">
-          Card Holder Name
-          <input
-            type="text"
-            className="w-full mt-1 p-2 border rounded"
-            value={newCard.cardHolder}
-            onChange={(e) => setNewCard({ ...newCard, cardHolder: e.target.value })}
-          />
-        </label>
-
-        <label className="block mb-2">
-          Card Number (Last 4 Digits)
-          <input
-            type="text"
-            className="w-full mt-1 p-2 border rounded"
-            maxLength="4"
-            pattern="\d{4}"
-            value={newCard.last4}
-            onChange={(e) => setNewCard({ ...newCard, last4: e.target.value })}
-          />
-        </label>
-
-        <label className="block mb-2">
-          Expiry Date (MM/YY)
-          <input
-            type="text"
-            className="w-full mt-1 p-2 border rounded"
-            placeholder="MM/YY"
-            value={newCard.expiry}
-            onChange={(e) => setNewCard({ ...newCard, expiry: e.target.value })}
-          />
-        </label>
-
-        <label className="block mb-2">
-          Card Brand
-          <select
-            className="w-full mt-1 p-2 border rounded"
-            value={newCard.brand}
-            onChange={(e) => setNewCard({ ...newCard, brand: e.target.value })}
-          >
-            <option value="visa">Visa</option>
-            <option value="mastercard">MasterCard</option>
-          </select>
-        </label>
-
+      {/* "Add Card" 按钮 */}
+      {!showAddCardForm && (
         <button
           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={handleAddCard}
+          onClick={() => setShowAddCardForm(true)}
         >
           Add Card
         </button>
-      </div>
+      )}
+
+      {/* 📌 添加银行卡表单 */}
+
+      {showAddCardForm && (
+        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-bold mb-2">Add New Card</h3>
+
+          <label className="block mb-2">
+            Card Holder Name
+            <input
+              type="text"
+              className="w-full mt-1 p-2 border rounded"
+              value={newCard.cardHolder}
+              onChange={(e) => setNewCard({ ...newCard, cardHolder: e.target.value })}
+            />
+          </label>
+
+          <label className="block mb-2">
+            Card Number (Last 4 Digits)
+            <input
+              type="text"
+              className="w-full mt-1 p-2 border rounded"
+              maxLength="4"
+              pattern="\d{4}"
+              value={newCard.last4}
+              onChange={(e) => setNewCard({ ...newCard, last4: e.target.value })}
+            />
+          </label>
+
+          <label className="block mb-2">
+            Expiry Date (MM/YY)
+            <input
+              type="text"
+              className="w-full mt-1 p-2 border rounded"
+              placeholder="MM/YY"
+              value={newCard.expiry}
+              onChange={(e) => setNewCard({ ...newCard, expiry: e.target.value })}
+            />
+          </label>
+
+          <label className="block mb-2">
+            Card Brand
+            <select
+              className="w-full mt-1 p-2 border rounded"
+              value={newCard.brand}
+              onChange={(e) => setNewCard({ ...newCard, brand: e.target.value })}
+            >
+              <option value="Visa">Visa</option>
+              <option value="MasterCard">MasterCard</option>
+            </select>
+          </label>
+
+          <button
+            className="mt-4 mr-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handleAddCard}
+          >
+            Add Card
+          </button>
+
+          <button
+            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+            onClick={() => setShowAddCardForm(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
 
 
