@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/app/_utils/firebase"; 
+import FileUpload from "./upload";
 
 export default function Packages() {
   
@@ -177,6 +178,7 @@ export default function Packages() {
                 }
               />
             </div>
+            <FileUpload />
             <div>
               <Label htmlFor="price">Price</Label>
               <Input

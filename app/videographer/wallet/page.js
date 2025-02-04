@@ -106,7 +106,7 @@ export default function Wallet({ userId }) {
       await updateDoc(walletRef, {
         "wallet.totalBalance": wallet.totalBalance - availableBalance,
       });
-      alert(`Withdrawn $${(availableBalance / 100).toFixed(2)}!`);
+      alert(`Withdrawn $${(availableBalance).toFixed(2)}!`);
       setWallet((prev) => ({
         ...prev,
         totalBalance: prev.totalBalance - availableBalance,
