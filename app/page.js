@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [portfolioItems, setPortfolioItems] = useState([]);
+  const [servicePackages, setServicePackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -40,7 +41,25 @@ export default function Home() {
       }
     }
 
+    async function fetchServicePackages() {
+      try {
+        const serviceRef = collection(db, "servicePackage");
+        const q = query(serviceRef, orderBy("__name__"), limit(4));
+        const querySnapshot = await getDocs(q);
+        const services = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setServicePackages(services);
+      } catch (error) {
+        console.error("Error loading service packages: ", error);
+      }
+    }
+
     fetchPortfolio();
+    fetchServicePackages();
+    setLoading(false);
   }, []);
 
   return (
@@ -71,6 +90,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Featured Portfolio Section */}
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
             Featured Portfolio
@@ -97,6 +117,35 @@ export default function Home() {
                     <h3 className="text-lg font-semibold">{item.title}</h3>
                     <p className="text-sm text-gray-600">{item.fullName}</p>
                     <p className="text-sm text-gray-700">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Service Packages Section */}
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
+            Popular Service Packages
+          </h2>
+
+          {loading ? (
+            <p>Loading services...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {servicePackages.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg cursor-pointer"
+                  onClick={() => router.push(`/profile/${item.ownerId}`)}
+                >
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-700">{item.description}</p>
+                    <p className="text-lg font-bold text-blue-600">
+                      ${item.price}
+                    </p>
                   </div>
                 </div>
               ))}
