@@ -102,7 +102,7 @@ export default function VideographerProfile() {
           <h1 className="text-3xl font-bold text-gray-900">
             {videographer?.username || "Videographer"}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mt-4 text-left leading-relaxed w-full">
             {videographer?.bio || "No bio available"}
           </p>
         </section>
