@@ -20,11 +20,10 @@ const imageDomains = [...new Set([...defaultDomains, ...additionalDomains])];
 
 const nextConfig = {
   images: {
-    domains: imageDomains, // External domains for URL-based images
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**", // Allow all hosts for remote images
+        hostname: "**", // Allow all domains
       },
     ],
   },

@@ -9,13 +9,13 @@ export default function SearchItem({ item }) {
   const router = useRouter();
 
   return (
-    <div className="border rounded-lg shadow-md p-4 bg-white max-w-lg mx-auto">
+    <div className="border rounded-lg shadow-md p-4 bg-white max-w-[350px] w-full mx-auto">
       <Image
         src={item.thumbnailUrl || "https://via.placeholder.com/150"}
         alt={item.title}
-        width={500}
+        width={350}
         height={300}
-        className="w-full h-40 object-cover rounded-md mb-6"
+        className="w-full h-40 object-cover rounded-md mb-4"
       />
       <h3 className="text-lg font-bold">{item.title}</h3>
       <p className="text-sm text-gray-600">{item.fullName}</p>
