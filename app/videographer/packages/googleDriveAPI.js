@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require('cors');
+//digital ocean
 
 const { google } = require("googleapis");
 const path = require("path");
@@ -20,49 +21,71 @@ const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
 // Google API 身份验证
 const auth = new google.auth.GoogleAuth({
-  keyFile: KEY_PATH,
-  scopes: SCOPES,
+    keyFile: KEY_PATH,
+    scopes: SCOPES,
 });
 
 const drive = google.drive({ version: "v3", auth });
 
 // 上传文件的 API 路由
-app.post("/upload", upload.single("file"), async (req, res) => {
-  const filePath = req.file.path;
-  const fileName = req.file.originalname;
+app.post("/upload", upload.array("file"), async (req, res) => {
+    const fileUrls = [];
 
-  try {
-    // 读取文件并上传到 Google Drive
-    const fileMetadata = {
-      name: fileName,
-      parents: ["1PNFD8IMp_X08L8-IgRICHKnNk9GmL9uM"], // 选择上传的文件夹
-    };
 
-    const media = {
-      body: fs.createReadStream(filePath),
-    };
+    try {
 
-    const driveResponse = await drive.files.create({
-      resource: fileMetadata,
-      media: media,
-      fields: "id, webViewLink",
-    });
+        for (let file of req.files) {
+            const filePath = file.path;
+            const fileName = file.originalname;
 
-    // 删除临时上传的文件
-    fs.unlinkSync(filePath);
+            // 读取文件并上传到 Google Drive
+            const fileMetadata = {
+                name: fileName,
+                parents: ["1PNFD8IMp_X08L8-IgRICHKnNk9GmL9uM"], // 选择上传的文件夹
+            };
 
-    // 返回文件的 Google Drive URL
-    res.json({
-      message: "File uploaded successfully",
-      fileUrl: `https://drive.google.com/file/d/${driveResponse.data.id}/view`,
-    });
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    res.status(500).send("Error uploading file");
-  }
+            const media = {
+                body: fs.createReadStream(filePath),
+            };
+
+            const driveResponse = await drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                //fields: "id, webViewLink",
+            });
+            console.log(driveResponse);  // 检查返回的完整数据
+
+            // 删除临时上传的文件
+            fs.unlinkSync(filePath);
+
+            // 保存每个文件的 Google Drive URL
+            fileUrls.push({
+                id: driveResponse.data.id,
+                url: `https://drive.google.com/uc?export=view&id=${driveResponse.data.id}`, // 修改为正确的图片 URL 格式
+              });
+        }
+
+        // 返回文件的 Google Drive URL
+        // res.json({
+        //     message: "File uploaded successfully",
+        //     fileUrls: fileUrls,  // 返回多个文件的 URL
+        // });
+
+        res.status(200).json({
+            message: "File uploaded successfully",
+            // fileUrls: fileUrls,  // 返回多个文件的 ID 和 URL
+            fileUrls: fileUrls.map(file => ({
+              id: file.id,
+              url: `https://drive.google.com/uc?export=view&id=${file.id}`  // 修改为正确的图片 URL 格式
+            })),
+          });
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        res.status(500).send("Error uploading file");
+    }
 });
 
 // 启动服务器
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
 });
