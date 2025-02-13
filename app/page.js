@@ -1,31 +1,67 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
+import { db } from "@/app/_utils/firebase";
 import { Button } from "@/components/ui/button";
-
-const portfolioItems = [
-  {
-    id: 1,
-    title: "Wedding Bliss",
-    image: "/images/wedding-bliss.jpg",
-  },
-  {
-    id: 2,
-    title: "Corporate Event",
-    image: "/images/corporate-event.jpg",
-  },
-  {
-    id: 3,
-    title: "Nature Documentary",
-    image: "/images/nature-documentary.jpg",
-  },
-  {
-    id: 4,
-    title: "Music Video",
-    image: "/images/music-video.png",
-  },
-];
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const [portfolioItems, setPortfolioItems] = useState([]);
+  const [servicePackages, setServicePackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Fetch portfolio items from Firestore
+  useEffect(() => {
+    async function fetchPortfolio() {
+      try {
+        // Query the 4 portfolio items
+        const portfolioRef = collection(db, "portfolios");
+
+        // Using orderBy and createdAt to get the latest 4 items
+        const q = query(portfolioRef, orderBy("createdAt", "desc"), limit(4));
+
+        const querySnapshot = await getDocs(q);
+
+        const items = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Shuffle the items
+        const shuffledItems = items.sort(() => 0.5 - Math.random());
+
+        setPortfolioItems(shuffledItems);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading portfolio items: ", error);
+        setLoading(false);
+      }
+    }
+
+    async function fetchServicePackages() {
+      try {
+        const serviceRef = collection(db, "servicePackage");
+        const q = query(serviceRef, orderBy("__name__"), limit(4));
+        const querySnapshot = await getDocs(q);
+        const services = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setServicePackages(services);
+      } catch (error) {
+        console.error("Error loading service packages: ", error);
+      }
+    }
+
+    fetchPortfolio();
+    fetchServicePackages();
+    setLoading(false);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
@@ -54,29 +90,67 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Featured Portfolio Section */}
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
-            Our Portfolio
+            Featured Portfolio
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {portfolioItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden"
-              >
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
+
+          {loading ? (
+            <p>Loading portfolio...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {portfolioItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg cursor-pointer"
+                  onClick={() => router.push(`/profile/${item.userId}`)}
+                >
+                  <Image
+                    src={item.thumbnailUrl}
+                    alt={item.title}
+                    width={400}
+                    height={300}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-600">{item.fullName}</p>
+                    <p className="text-sm text-gray-700">{item.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Service Packages Section */}
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
+            Popular Service Packages
+          </h2>
+
+          {loading ? (
+            <p>Loading services...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {servicePackages.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg cursor-pointer"
+                  onClick={() => router.push(`/profile/${item.ownerId}`)}
+                >
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-700">{item.description}</p>
+                    <p className="text-lg font-bold text-blue-600">
+                      ${item.price}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white py-12">

@@ -7,13 +7,13 @@ import SearchForm from "./search-form";
 import SearchResults from "./search-results";
 
 // Capitalize the first letter of each word
-function capitalizeWords(name) {
+const capitalizeWords = (name) => {
   return name
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
-}
+};
 
 export default function SearchPage() {
   const [portfolios, setPortfolios] = useState([]);

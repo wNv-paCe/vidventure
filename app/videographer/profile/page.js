@@ -3,7 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/app/_utils/auth-context";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  writeBatch,
+  query,
+  collection,
+  where,
+} from "firebase/firestore";
 import { db } from "@/app/_utils/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -49,6 +58,15 @@ export default function Profile() {
     fetchUserData();
   }, [user]);
 
+  // Capitalize each word in a string
+  const capitalizeWords = (name) => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -58,15 +76,24 @@ export default function Profile() {
 
     try {
       const userRef = doc(db, "users", user.uid);
+
+      const captitalizedFullName = capitalizeWords(formData.fullName);
+
       await setDoc(
         userRef,
         {
-          fullName: formData.fullName,
+          fullName: captitalizedFullName,
           bio: formData.bio,
           specialization: formData.specialization,
         },
         { merge: true }
       );
+
+      // Update fullName in state
+      setFormData((prev) => ({
+        ...prev,
+        fullName: captitalizedFullName,
+      }));
 
       setMessage("Profile updated successfully!");
     } catch (err) {
@@ -82,11 +109,56 @@ export default function Profile() {
     router.push("/");
   };
 
+  // Update username in Firestore and update portfolios fullNames
   const handleFieldUpdate = async (field, newValue) => {
     const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, { [field]: newValue }, { merge: true });
-    if (field === "username") {
-      setUsername(newValue);
+
+    try {
+      if (field === "username") {
+        // Capitalize username
+        const capitalizedUsername = capitalizeWords(newValue);
+        setUsername(capitalizedUsername);
+
+        // Update username in Firestore
+        await setDoc(
+          userRef,
+          { username: capitalizedUsername },
+          { merge: true }
+        );
+
+        // Check if user is a videographer
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().type === "videographer") {
+          console.log("User is a videographer, checking portfolios...");
+
+          // Query all portfolios by user
+          const portfoliosQuery = query(
+            collection(db, "portfolios"),
+            where("userId", "==", user.uid)
+          );
+          const querySnapshot = await getDocs(portfoliosQuery);
+
+          if (querySnapshot.empty) {
+            console.log("No portfolios found for this videographer.");
+            return;
+          }
+
+          // Batch update fullName in portfolios
+          const batch = writeBatch(db);
+          querySnapshot.forEach((doc) => {
+            const portfolioRef = doc.ref;
+            batch.update(portfolioRef, { fullName: capitalizedUsername });
+          });
+
+          await batch.commit();
+          console.log("Full names updated in portfolios.");
+        }
+      } else {
+        // Update other fields
+        await setDoc(userRef, { [field]: newValue }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error updating field:", error);
     }
   };
 

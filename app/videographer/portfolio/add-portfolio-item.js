@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { addDoc, updateDoc, collection, doc } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
+import { addDoc, updateDoc, collection, doc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/app/_utils/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,30 +12,59 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
   const [description, setDescription] = useState(item.description || "");
   const [thumbnailUrl, setThumbnailUrl] = useState(item.thumbnailUrl || "");
   const [url, setUrl] = useState(item.url || "");
-  const [fullName, setFullName] = useState(item.fullName || "");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const isEditing = Boolean(item.id);
 
-  function capitalizeWords(name) {
+  // Capitalize the first letter of each word
+  const capitalizeWords = (name) => {
     return name
-      .toLowerCase()
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(" ");
-  }
+  };
+
+  // Fetch the current user's fullname
+  useEffect(() => {
+    async function fetchUsername() {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("User not authenticated");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          let username = userSnap.data().username || "Unknown User";
+          const capitalizedUsername = capitalizeWords(username);
+
+          setFullName(capitalizedUsername);
+        } else {
+          console.error("User data not found in Firestore");
+        }
+      } catch (error) {
+        console.error("Error fetching username:", error.message);
+      }
+    }
+
+    fetchUsername();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      let newItem;
       const userId = auth.currentUser?.uid;
       if (!userId) {
         throw new Error("User not authenticated");
       }
 
-      const formattedFullName = capitalizeWords(fullName);
+      let newItem;
 
       if (isEditing) {
         const itemRef = doc(db, "portfolios", item.id);
@@ -44,7 +73,7 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
           description,
           thumbnailUrl,
           url,
-          fullName: formattedFullName,
+          fullName,
         });
         newItem = {
           ...item,
@@ -52,7 +81,7 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
           description,
           thumbnailUrl,
           url,
-          fullName: formattedFullName,
+          fullName,
         };
       } else {
         const collectionRef = collection(db, "portfolios");
@@ -61,7 +90,7 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
           description,
           thumbnailUrl,
           url,
-          fullName: formattedFullName,
+          fullName,
           userId,
           createdAt: new Date().toISOString(),
         });
@@ -71,7 +100,7 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
           description,
           thumbnailUrl,
           url,
-          fullName: formattedFullName,
+          fullName,
         };
       }
 
@@ -139,17 +168,9 @@ export default function AddPortfolioItem({ item = {}, onClose, onSave }) {
             />
           </div>
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium">
-              Author Full Name
-            </label>
-            <Input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
-              required
-            />
+            <p className="text-sm font-medium">
+              Author: {fullName || "Loading..."}
+            </p>
           </div>
           <div className="flex justify-end space-x-4">
             <Button

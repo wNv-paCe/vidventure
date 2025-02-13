@@ -22,6 +22,15 @@ export default function SignupForm({ userType }) {
   const [successMessage, setSuccessMessage] = useState(null);
   const router = useRouter();
 
+  // Capitalize each word in a string
+  const capitalizeWords = (name) => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
@@ -40,11 +49,13 @@ export default function SignupForm({ userType }) {
       return;
     }
 
+    const capitalizedUsername = capitalizeWords(username);
+
     try {
       const result = await registerWithEmail(
         email,
         password,
-        username,
+        capitalizedUsername,
         userType
       );
 
