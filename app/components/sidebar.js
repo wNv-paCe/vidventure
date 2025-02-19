@@ -27,6 +27,7 @@ const Sidebar = ({ userType }) => {
     { href: "/client/requests", label: "My Requests", icon: FileText },
     { href: "/client/messages", label: "Messages", icon: MessageSquare },
     { href: "/client/profile", label: "Profile", icon: UserCircle },
+    { href: "/client/wallet", label: "My Wallet", icon: DollarSign },
   ];
 
   const videographerLinks = [
