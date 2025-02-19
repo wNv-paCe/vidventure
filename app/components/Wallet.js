@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   doc,
   setDoc,
@@ -8,6 +8,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase";
 import { getAuth } from "firebase/auth";
@@ -24,10 +25,6 @@ export default function Wallet() {
   const auth = getAuth();
   const user = auth.currentUser;
   const userId = user?.uid;
-  const searchParams = useSearchParams();
-  const success = searchParams.get("success");
-  const amount = searchParams.get("amount");
-  const transactionProcessed = useRef(false);
 
   const [newCard, setNewCard] = useState({
     brand: "Visa",
@@ -40,106 +37,41 @@ export default function Wallet() {
   useEffect(() => {
     if (!userId) return;
 
-    const fetchUserData = async () => {
-      const userDocRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userDocRef);
-
+    const userDocRef = doc(db, "users", userId);
+    getDoc(userDocRef).then((userSnap) => {
       if (userSnap.exists()) {
-        const userData = userSnap.data();
-        setUserType(userData.type || "client");
+        setUserType(userSnap.data().type || "client");
       }
-    };
+    });
 
-    const fetchWallet = async () => {
-      const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
-      const walletSnap = await getDoc(walletDocRef);
-
-      if (walletSnap.exists()) {
-        setWallet(walletSnap.data());
+    const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+    const unsubscribe = onSnapshot(walletRef, (doc) => {
+      if (doc.exists()) {
+        setWallet(doc.data());
+        setLoading(false);
       } else {
         console.warn("No wallet found, creating one...");
-
-        // 使用 setDoc() 来创建新钱包
-        await setDoc(walletDocRef, {
+        setDoc(walletRef, {
           totalBalance: 0,
           lockedAmount: 0,
           withdrawableBalance: 0,
           cards: [],
           transactions: [],
-        });
-
-        setWallet({
-          totalBalance: 0,
-          lockedAmount: 0,
-          withdrawableBalance: 0,
-          cards: [],
-          transactions: [],
-        });
-      }
-      setLoading(false);
-    };
-
-    fetchUserData();
-    fetchWallet();
-  }, [userId]);
-
-  useEffect(() => {
-    if (success && amount && !transactionProcessed.current) {
-      console.log("Processing recharge transaction...");
-      transactionProcessed.current = true;
-
-      const transactionKey = `processed_${userId}_${amount}_${Date.now()}`;
-
-      // 避免重复处理相同的交易
-      if (localStorage.getItem(transactionKey)) {
-        console.warn("Transaction already processed, skipping...");
-        return;
-      }
-
-      // 标记交易已处理
-      localStorage.setItem(transactionKey, "true");
-
-      const updateWalletBalance = async () => {
-        const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
-        const walletSnap = await getDoc(walletRef);
-
-        if (walletSnap.exists()) {
-          console.log("Updating wallet balance...");
-
-          const newTransaction = {
-            id: `txn_${Date.now()}`,
-            amount: Number(amount),
-            type: "recharge",
-            timestamp: new Date().toISOString(),
-          };
-
-          await updateDoc(walletRef, {
-            totalBalance: walletSnap.data().totalBalance + Number(amount),
-            withdrawableBalance:
-              walletSnap.data().withdrawableBalance + Number(amount),
-            transactions: arrayUnion(newTransaction),
+        }).then(() => {
+          setWallet({
+            totalBalance: 0,
+            lockedAmount: 0,
+            withdrawableBalance: 0,
+            cards: [],
+            transactions: [],
           });
+          setLoading(false);
+        });
+      }
+    });
 
-          setWallet((prev) => ({
-            ...prev,
-            totalBalance: prev.totalBalance + Number(amount),
-            withdrawableBalance: prev.withdrawableBalance + Number(amount),
-            transactions: [...(prev.transactions || []), newTransaction],
-          }));
-
-          // 重定向到钱包页面
-          console.log("Transaction completed, redirecting...");
-          router.replace("/client/wallet");
-
-          setTimeout(() => {
-            alert(`Wallet recharged successfully with $${amount}`);
-          }, 500);
-        }
-      };
-
-      updateWalletBalance();
-    }
-  }, [success, amount]);
+    return () => unsubscribe();
+  }, [userId]);
 
   /** 处理充值逻辑 */
   const handleRecharge = async () => {
@@ -182,34 +114,24 @@ export default function Wallet() {
       return;
     }
 
-    const newBalance = wallet.withdrawableBalance - withdrawAmount;
-    const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
-
-    await updateDoc(walletRef, {
-      withdrawableBalance: newBalance,
-      transactions: arrayUnion({
-        id: `txn_${Date.now()}`,
-        amount: -withdrawAmount,
-        type: "withdrawal",
-        timestamp: new Date().toISOString(),
-      }),
-    });
-
-    alert(`Withdrawal request submitted for $${withdrawAmount}`);
-    setWithdrawAmount("");
-    setWallet((prev) => ({
-      ...prev,
-      withdrawableBalance: newBalance,
-      transactions: [
-        ...prev.transactions,
-        {
+    try {
+      const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+      await updateDoc(walletRef, {
+        withdrawableBalance: wallet.withdrawableBalance - withdrawAmount,
+        transactions: arrayUnion({
           id: `txn_${Date.now()}`,
           amount: -withdrawAmount,
           type: "withdrawal",
           timestamp: new Date().toISOString(),
-        },
-      ],
-    }));
+        }),
+      });
+
+      alert(`Withdrawal request submitted for $${withdrawAmount}`);
+      setWithdrawAmount("");
+    } catch (error) {
+      console.error("Error processing withdrawal:", error);
+      alert("Failed to process withdrawal.");
+    }
   };
 
   /** 处理添加银行卡 */

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { db } from "@/app/_utils/firebase";
-import { doc, runTransaction } from "firebase/firestore";
+import { doc, runTransaction, arrayUnion } from "firebase/firestore";
 
 export const config = {
   api: {
@@ -13,6 +13,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export async function POST(req) {
   const sig = req.headers.get("stripe-signature");
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!sig || !endpointSecret) {
+    console.error("Missing Stripe signature or webhook secret");
+    return new Response("Missing Stripe signature or webhook secret", {
+      status: 400,
+    });
+  }
 
   let event;
   try {
@@ -40,30 +47,38 @@ export async function POST(req) {
       await runTransaction(db, async (transaction) => {
         const walletSnap = await transaction.get(walletRef);
         if (!walletSnap.exists()) {
-          console.warn(`Wallet not found for user: ${userId}`);
+          console.warn(`Wallet not found for user: ${userId}, creating one...`);
+          transaction.set(walletRef, {
+            totalBalance: 0,
+            withdrawableBalance: 0,
+            transactions: [],
+          });
+        }
+
+        const walletData = (await transaction.get(walletRef)).data();
+
+        // 检查是否已经处理过这笔交易
+        const existingTransaction = walletData.transactions?.some(
+          (txn) => txn.id === session.id
+        );
+
+        if (existingTransaction) {
+          console.warn("Transaction already processed, skipping...");
           return;
         }
 
-        const walletData = walletSnap.data();
-
-        // 计算 Stripe 手续费（默认 2.9% + 0.30 CAD）
-        const stripeFees = (session.amount_total * 0.029 + 30) / 100;
-        const netAmount = session.amount_total / 100 - stripeFees;
+        const netAmount = session.amount_total / 100;
 
         transaction.update(walletRef, {
           totalBalance: (walletData.totalBalance || 0) + netAmount,
           withdrawableBalance:
             (walletData.withdrawableBalance || 0) + netAmount,
-          transactions: [
-            ...(walletData.transactions || []), // 避免 `undefined` 问题
-            {
-              id: `txn_${Date.now()}`,
-              amount: netAmount,
-              type: "deposit",
-              fees: stripeFees,
-              timestamp: new Date().toISOString(),
-            },
-          ],
+          transactions: arrayUnion({
+            id: session.id, // 使用 session.id 作为交易 ID
+            amount: netAmount,
+            type: "deposit",
+            timestamp: new Date().toISOString(),
+          }),
         });
 
         console.log(`Wallet updated for user ${userId}: +$${netAmount}`);

@@ -32,8 +32,8 @@ export async function POST(req) {
         },
       ],
       mode: "payment",
-      metadata: { userId, userType },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?success=true&amount=${amount}`,
+      metadata: { userId, userType, amount },
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?canceled=true`,
     });
 
