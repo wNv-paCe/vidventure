@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   doc,
   setDoc,
@@ -17,9 +18,16 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showAddCardForm, setShowAddCardForm] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState(10);
+  const [userType, setUserType] = useState("");
+  const router = useRouter();
   const auth = getAuth();
   const user = auth.currentUser;
   const userId = user?.uid;
+  const searchParams = useSearchParams();
+  const success = searchParams.get("success");
+  const amount = searchParams.get("amount");
+  const transactionProcessed = useRef(false);
 
   const [newCard, setNewCard] = useState({
     brand: "Visa",
@@ -31,6 +39,16 @@ export default function Wallet() {
 
   useEffect(() => {
     if (!userId) return;
+
+    const fetchUserData = async () => {
+      const userDocRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userDocRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setUserType(userData.type || "client");
+      }
+    };
 
     const fetchWallet = async () => {
       const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
@@ -61,8 +79,97 @@ export default function Wallet() {
       setLoading(false);
     };
 
+    fetchUserData();
     fetchWallet();
   }, [userId]);
+
+  useEffect(() => {
+    if (success && amount && !transactionProcessed.current) {
+      console.log("Processing recharge transaction...");
+      transactionProcessed.current = true;
+
+      const transactionKey = `processed_${userId}_${amount}_${Date.now()}`;
+
+      // 避免重复处理相同的交易
+      if (localStorage.getItem(transactionKey)) {
+        console.warn("Transaction already processed, skipping...");
+        return;
+      }
+
+      // 标记交易已处理
+      localStorage.setItem(transactionKey, "true");
+
+      const updateWalletBalance = async () => {
+        const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+        const walletSnap = await getDoc(walletRef);
+
+        if (walletSnap.exists()) {
+          console.log("Updating wallet balance...");
+
+          const newTransaction = {
+            id: `txn_${Date.now()}`,
+            amount: Number(amount),
+            type: "recharge",
+            timestamp: new Date().toISOString(),
+          };
+
+          await updateDoc(walletRef, {
+            totalBalance: walletSnap.data().totalBalance + Number(amount),
+            withdrawableBalance:
+              walletSnap.data().withdrawableBalance + Number(amount),
+            transactions: arrayUnion(newTransaction),
+          });
+
+          setWallet((prev) => ({
+            ...prev,
+            totalBalance: prev.totalBalance + Number(amount),
+            withdrawableBalance: prev.withdrawableBalance + Number(amount),
+            transactions: [...(prev.transactions || []), newTransaction],
+          }));
+
+          // 重定向到钱包页面
+          console.log("Transaction completed, redirecting...");
+          router.replace("/client/wallet");
+
+          setTimeout(() => {
+            alert(`Wallet recharged successfully with $${amount}`);
+          }, 500);
+        }
+      };
+
+      updateWalletBalance();
+    }
+  }, [success, amount]);
+
+  /** 处理充值逻辑 */
+  const handleRecharge = async () => {
+    if (!userId || rechargeAmount <= 0) {
+      alert("Invalid recharge amount.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: rechargeAmount,
+          userId: userId,
+          userType: userType,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe Checkout
+      } else {
+        alert("Error: Unable to process payment.");
+      }
+    } catch (error) {
+      console.error("Error starting Stripe Checkout:", error);
+      alert("Failed to start checkout.");
+    }
+  };
 
   /** 处理提现逻辑 */
   const handleWithdraw = async () => {
@@ -227,6 +334,25 @@ export default function Wallet() {
           </p>
         </div>
       </div>
+
+      {/* 只有 type 为 client 才能充值 */}
+      {userType === "client" && (
+        <div className="mt-4">
+          <input
+            type="number"
+            value={rechargeAmount}
+            onChange={(e) => setRechargeAmount(Number(e.target.value))}
+            className="border p-2 mr-2 w-24"
+            placeholder="Enter amount"
+          />
+          <button
+            onClick={handleRecharge}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Add Funds
+          </button>
+        </div>
+      )}
 
       {/* 提现功能 */}
       <div className="mt-4">
