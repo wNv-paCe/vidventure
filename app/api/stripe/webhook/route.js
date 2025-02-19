@@ -1,7 +1,6 @@
 import Stripe from "stripe";
 import { db } from "@/app/_utils/firebase";
 import { doc, runTransaction } from "firebase/firestore";
-import { buffer } from "micro";
 
 export const config = {
   api: {
@@ -17,7 +16,7 @@ export async function POST(req) {
 
   let event;
   try {
-    const rawBody = await buffer(req.body); // 读取原始请求体
+    const rawBody = await req.text(); // 读取原始请求体
     event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
     console.log("Webhook received:", event.type);
   } catch (err) {
@@ -41,7 +40,7 @@ export async function POST(req) {
       await runTransaction(db, async (transaction) => {
         const walletSnap = await transaction.get(walletRef);
         if (!walletSnap.exists()) {
-          console.warn(`⚠️ Wallet not found for user: ${userId}`);
+          console.warn(`Wallet not found for user: ${userId}`);
           return;
         }
 
