@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   doc,
   setDoc,
@@ -7,6 +8,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase";
 import { getAuth } from "firebase/auth";
@@ -17,6 +19,9 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showAddCardForm, setShowAddCardForm] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState(10);
+  const [userType, setUserType] = useState("");
+  const router = useRouter();
   const auth = getAuth();
   const user = auth.currentUser;
   const userId = user?.uid;
@@ -32,37 +37,71 @@ export default function Wallet() {
   useEffect(() => {
     if (!userId) return;
 
-    const fetchWallet = async () => {
-      const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
-      const walletSnap = await getDoc(walletDocRef);
+    const userDocRef = doc(db, "users", userId);
+    getDoc(userDocRef).then((userSnap) => {
+      if (userSnap.exists()) {
+        setUserType(userSnap.data().type || "client");
+      }
+    });
 
-      if (walletSnap.exists()) {
-        setWallet(walletSnap.data());
+    const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+    const unsubscribe = onSnapshot(walletRef, (doc) => {
+      if (doc.exists()) {
+        setWallet(doc.data());
+        setLoading(false);
       } else {
         console.warn("No wallet found, creating one...");
-
-        // 使用 setDoc() 来创建新钱包
-        await setDoc(walletDocRef, {
+        setDoc(walletRef, {
           totalBalance: 0,
           lockedAmount: 0,
           withdrawableBalance: 0,
           cards: [],
           transactions: [],
-        });
-
-        setWallet({
-          totalBalance: 0,
-          lockedAmount: 0,
-          withdrawableBalance: 0,
-          cards: [],
-          transactions: [],
+        }).then(() => {
+          setWallet({
+            totalBalance: 0,
+            lockedAmount: 0,
+            withdrawableBalance: 0,
+            cards: [],
+            transactions: [],
+          });
+          setLoading(false);
         });
       }
-      setLoading(false);
-    };
+    });
 
-    fetchWallet();
+    return () => unsubscribe();
   }, [userId]);
+
+  /** 处理充值逻辑 */
+  const handleRecharge = async () => {
+    if (!userId || rechargeAmount <= 0) {
+      alert("Invalid recharge amount.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: rechargeAmount,
+          userId: userId,
+          userType: userType,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe Checkout
+      } else {
+        alert("Error: Unable to process payment.");
+      }
+    } catch (error) {
+      console.error("Error starting Stripe Checkout:", error);
+      alert("Failed to start checkout.");
+    }
+  };
 
   /** 处理提现逻辑 */
   const handleWithdraw = async () => {
@@ -75,34 +114,24 @@ export default function Wallet() {
       return;
     }
 
-    const newBalance = wallet.withdrawableBalance - withdrawAmount;
-    const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
-
-    await updateDoc(walletRef, {
-      withdrawableBalance: newBalance,
-      transactions: arrayUnion({
-        id: `txn_${Date.now()}`,
-        amount: -withdrawAmount,
-        type: "withdrawal",
-        timestamp: new Date().toISOString(),
-      }),
-    });
-
-    alert(`Withdrawal request submitted for $${withdrawAmount}`);
-    setWithdrawAmount("");
-    setWallet((prev) => ({
-      ...prev,
-      withdrawableBalance: newBalance,
-      transactions: [
-        ...prev.transactions,
-        {
+    try {
+      const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+      await updateDoc(walletRef, {
+        withdrawableBalance: wallet.withdrawableBalance - withdrawAmount,
+        transactions: arrayUnion({
           id: `txn_${Date.now()}`,
           amount: -withdrawAmount,
           type: "withdrawal",
           timestamp: new Date().toISOString(),
-        },
-      ],
-    }));
+        }),
+      });
+
+      alert(`Withdrawal request submitted for $${withdrawAmount}`);
+      setWithdrawAmount("");
+    } catch (error) {
+      console.error("Error processing withdrawal:", error);
+      alert("Failed to process withdrawal.");
+    }
   };
 
   /** 处理添加银行卡 */
@@ -227,6 +256,25 @@ export default function Wallet() {
           </p>
         </div>
       </div>
+
+      {/* 只有 type 为 client 才能充值 */}
+      {userType === "client" && (
+        <div className="mt-4">
+          <input
+            type="number"
+            value={rechargeAmount}
+            onChange={(e) => setRechargeAmount(Number(e.target.value))}
+            className="border p-2 mr-2 w-24"
+            placeholder="Enter amount"
+          />
+          <button
+            onClick={handleRecharge}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Add Funds
+          </button>
+        </div>
+      )}
 
       {/* 提现功能 */}
       <div className="mt-4">
