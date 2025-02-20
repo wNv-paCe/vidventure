@@ -36,6 +36,8 @@ export default function Packages() {
   
   const [packages, setPackages] = useState([]);
 
+  const [uploadedFiles, setUploadedFiles] = useState([]);  // 存储上传的文件信息
+
   const [editPackageId, setEditPackageId] = useState(null); // 记录正在编辑的 package ID
   const [editPackageData, setEditPackageData] = useState(null); // 记录当前编辑的数据
 
@@ -44,7 +46,14 @@ export default function Packages() {
     title: "",
     description: "",
     price: "",
+    media: [],  // 添加 media 字段
   });
+
+  const handleUploadComplete = (files) => {
+    setUploadedFiles(files); // 这里的 files 是 [{ name, id, url }]
+    //setNewPackage(prev => ({ ...prev, media: files }));  // 确保 media 也更新
+    //console.log("Files received from upload component:", files);
+  };
 
   const handleEdit = (pkg) => {
     setEditPackageId(pkg.id);
@@ -125,8 +134,15 @@ export default function Packages() {
       alert("Price must be 0 or a positive number");
       return;
     }
-  
+
+    
     if (userId) {
+
+      const packageData = {
+        ...newPackage,
+        ownerId: userId,
+        media: uploadedFiles,  // 存入 Firestore
+      };
       const docRef = await addDoc(collection(db, "servicePackage"), {
         ...packageData,
         ownerId: userId, // 关联当前用户
@@ -138,7 +154,8 @@ export default function Packages() {
         { id: docRef.id, ...packageData, ownerId: userId },
       ]);
 
-      setNewPackage({ title: "", description: "", price: "" }); // 清空输入框
+      setNewPackage({ title: "", description: "", price: "", media: []}); // 清空输入框
+      setUploadedFiles([]);  // 清空已上传文件
       setIsAdding(false);
       
     } else {
@@ -150,6 +167,7 @@ export default function Packages() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">My Packages</h1>
+      
       <Button onClick={() => setIsAdding(true)} className="mb-6">
         Add New Package
       </Button>
@@ -178,7 +196,7 @@ export default function Packages() {
                 }
               />
             </div>
-            <FileUpload />
+            <FileUpload onUploadComplete={handleUploadComplete}/>
             <div>
               <Label htmlFor="price">Price</Label>
               <Input
@@ -252,7 +270,8 @@ export default function Packages() {
                 <>
                   <p className="mb-2">{pkg.description}</p>
                   <p className="mb-4 font-bold">Price: ${pkg.price}</p>
-                  <img src={pkg.media?.[0]?.viewUrl || "/default-image.png"} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
+                  <iframe src={pkg.media?.[0]?.url || "/default-image.png"} alt={pkg.media?.[0]?.name} className="w-full h-32 object-cover mb-4" />
+
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => handleEdit(pkg)}>
                       Edit
