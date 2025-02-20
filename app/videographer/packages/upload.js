@@ -57,13 +57,27 @@ function FileUpload() {
                         {fileUrls.map((file, index) => (
                             <li key={index}>
                                 {/* 显示图片，使用从 Google Drive 获取的图片 URL */}
-                                <img
-                                    src={file.url} // 使用返回的文件URL
+                                {/* <img
+                                    //src ={file.url} // 使用返回的文件URL
+                                    //src = {`https://drive.google.com/uc?export=view&id=${file.id}`}
+                                    src = "https://drive.google.com/file/d/1qua-hI9yk9tIZo2n6_Nskidy0ZCe9iep/view?usp=drivesdk"
                                     alt={`File ${index + 1}`}
                                     style={{ width: '200px', height: 'auto' }} // 调整图片大小
-                                />
+                                /> */}
+                                {/* <iframe src="https://drive.google.com/file/d/1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj/view?usp=drivesdk" />
+                                <iframe src="https://drive.google.com/uc?export=download&id=1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj" />
+
+                                <iframe src= "https://drive.google.com/uc?export=view&id=1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj" />
+                                <img src="https://drive.google.com/file/d/1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj/view?usp=drivesdk" />
+                                <img src="https://drive.google.com/uc?export=download&id=1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj" />
+
+                                <img src= "https://drive.google.com/uc?export=view&id=1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj" />
+                                <iframe src = {`https://drive.usercontent.google.com/download?id=${file.id}`}></iframe>
+                                <iframe src = "https://drive.google.com/uc?id=1AulpwTZuvwKm-p00TaPxTMLQB-WXUVhj"></iframe> */}
+                                <iframe src= {file.url} width="200" ></iframe>
+
                                 <a href={file.url} target="_blank" rel="noopener noreferrer">
-                                    View File {index + 1}
+                                    View File {file.name}
                                 </a>
                             </li>
                         ))}
