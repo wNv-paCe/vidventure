@@ -6,6 +6,7 @@ const cors = require('cors');
 const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
+const { url } = require("inspector");
 
 const app = express();
 const port = 5000;
@@ -26,6 +27,11 @@ const auth = new google.auth.GoogleAuth({
 });
 
 const drive = google.drive({ version: "v3", auth });
+
+//define root route
+app.get('/', (req, res) => {
+    res.send('Hello Cutie!');
+});
 
 // 上传文件的 API 路由
 app.post("/upload", upload.array("file"), async (req, res) => {
@@ -51,7 +57,7 @@ app.post("/upload", upload.array("file"), async (req, res) => {
             const driveResponse = await drive.files.create({
                 resource: fileMetadata,
                 media: media,
-                //fields: "id, webViewLink",
+                fields: "id, name, webViewLink",
             });
             console.log(driveResponse);  // 检查返回的完整数据
 
@@ -61,7 +67,7 @@ app.post("/upload", upload.array("file"), async (req, res) => {
             // 保存每个文件的 Google Drive URL
             fileUrls.push({
                 id: driveResponse.data.id,
-                url: `https://drive.google.com/uc?export=view&id=${driveResponse.data.id}`, // 修改为正确的图片 URL 格式
+                url: `https://lh3.googleusercontent.com/d/${driveResponse.data.id}=w1920-h1080`, // 修改为正确的图片 URL 格式
               });
         }
 
@@ -76,7 +82,7 @@ app.post("/upload", upload.array("file"), async (req, res) => {
             // fileUrls: fileUrls,  // 返回多个文件的 ID 和 URL
             fileUrls: fileUrls.map(file => ({
               id: file.id,
-              url: `https://drive.google.com/uc?export=view&id=${file.id}`  // 修改为正确的图片 URL 格式
+              url: `https://lh3.googleusercontent.com/d/${file.id}=w1920-h1080`  // 修改为正确的图片 URL 格式
             })),
           });
     } catch (error) {
