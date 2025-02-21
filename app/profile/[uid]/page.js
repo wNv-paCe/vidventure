@@ -146,10 +146,21 @@ export default function VideographerProfile() {
               {servicePackages.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden p-4"
+                  className="bg-white rounded-lg shadow-md overflow-hidden p-4 hover:scale-105 hover:shadow-lg cursor-pointer"
+                  onClick={() => router.push(`/servicePackage/${item.id}`)}
                 >
+                  {/* 显示图片 */}
+                  {item.media && item.media.length > 0 && (
+                    <iframe
+                      src={item.media[0].url}
+                      title={item.media[0].name}
+                      width="100%"
+                      height="200"
+                      className="w-full h-48 object-cover rounded-t-lg"
+                      allowFullScreen
+                    ></iframe>
+                  )}
                   <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <p className="text-sm text-gray-600">{item.description}</p>
                   <p className="text-lg font-bold text-blue-600">
                     ${item.price}
                   </p>
