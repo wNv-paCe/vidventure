@@ -150,7 +150,7 @@ export default function VideographerProfile() {
                   onClick={() => router.push(`/servicePackage/${item.id}`)}
                 >
                   {/* 显示图片 */}
-                  {item.media && item.media.length > 0 && (
+                  {item.media && item.media.length > 0 ? (
                     <iframe
                       src={item.media[0].url}
                       title={item.media[0].name}
@@ -159,6 +159,14 @@ export default function VideographerProfile() {
                       className="w-full h-48 object-cover rounded-t-lg"
                       allowFullScreen
                     ></iframe>
+                  ) : (
+                    <Image
+                      src="/images/default-image.png"
+                      alt="Default Service Package"
+                      width={400}
+                      height={200}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
                   )}
                   <h3 className="text-lg font-semibold">{item.title}</h3>
                   <p className="text-lg font-bold text-blue-600">
