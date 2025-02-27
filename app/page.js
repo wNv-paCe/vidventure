@@ -1,19 +1,49 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db } from "@/app/_utils/firebase";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
-import { db } from "@/app/_utils/firebase";
+import {
+  doc,
+  collection,
+  getDocs,
+  getDoc,
+  query,
+  limit,
+  orderBy,
+} from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const [user, setUser] = useState(null);
+  const [userType, setUserType] = useState(null);
   const [portfolioItems, setPortfolioItems] = useState([]);
   const [servicePackages, setServicePackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Fetch portfolio items from Firestore
+  // Listen for changes to the user authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setUserType(userSnap.data().type);
+        }
+      } else {
+        setUser(null);
+        setUserType(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch the portfolio items and service packages
   useEffect(() => {
     async function fetchPortfolio() {
       try {
@@ -59,7 +89,6 @@ export default function Home() {
 
     fetchPortfolio();
     fetchServicePackages();
-    setLoading(false);
   }, []);
 
   return (
@@ -68,12 +97,26 @@ export default function Home() {
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">VidVenture</h1>
           <nav>
-            <Button asChild className="mr-4">
-              <Link href="/login/client">Client Login</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/login/videographer">Videographer Login</Link>
-            </Button>
+            {!user ? (
+              <>
+                <Button asChild className="mr-4">
+                  <Link href="/login/client">Client Login</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/login/videographer">Videographer Login</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => router.push(`/${userType}/dashboard`)}
+                  className="mr-4"
+                >
+                  Dashboard
+                </Button>
+                <Button onClick={() => signOut(auth)}>Logout</Button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -141,7 +184,7 @@ export default function Home() {
                   onClick={() => router.push(`/servicePackage/${item.id}`)}
                 >
                   {/* 显示图片 */}
-                  {item.media && item.media.length > 0 && (
+                  {item.media && item.media.length > 0 ? (
                     <iframe
                       src={item.media[0].url}
                       alt={item.media[0].name}
@@ -150,7 +193,16 @@ export default function Home() {
                       className="w-full h-48 object-cover rounded-t-lg"
                       allowFullScreen
                     ></iframe>
+                  ) : (
+                    <Image
+                      src="/images/default-image.png"
+                      alt="Default Service Package"
+                      width={400}
+                      height={200}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
                   )}
+
                   <div className="p-4">
                     <h3 className="text-lg font-semibold">{item.title}</h3>
                     <p className="text-lg font-bold text-blue-600">

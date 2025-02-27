@@ -7,6 +7,7 @@ const Header = ({ userType }) => {
   const { user, firebaseSignOut } = useUserAuth();
   const router = useRouter();
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       await firebaseSignOut();
@@ -17,15 +18,24 @@ const Header = ({ userType }) => {
     }
   };
 
+  // Handle back to home
+  const handleBackToHome = () => {
+    router.push("/");
+  };
+
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">
+        <h1
+          onClick={handleBackToHome}
+          className="text-2xl font-semibold hover:scale-105 hover:shadow-lg cursor-pointer"
+        >
           {userType === "client"
             ? "Client Dashboard"
             : "Videographer Dashboard"}
         </h1>
         <div className="flex items-center">
+          {/* User Info and Log out */}
           <span className="mr-4">Welcome, {user?.email}</span>
           <Button
             onClick={handleLogout}
