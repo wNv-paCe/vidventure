@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-function FileUpload() {
+function FileUpload({ onUploadComplete }) {
     const [files, setFiles] = useState([]); // 用于存储多个文件
     const [fileUrls, setFileUrls] = useState([]); // 用于存储多个文件的 URL
 
@@ -28,6 +28,11 @@ function FileUpload() {
             alert("Files uploaded successfully!");
             // 更新状态保存所有上传文件的 URL
             setFileUrls(response.data.fileUrls);
+            // 传递文件信息给父组件
+            if (onUploadComplete) {
+                //console.log("Calling onUploadComplete with:", response.data.fileUrls);
+                onUploadComplete(response.data.fileUrls);  // fileUrls 是一个数组 [{ name, id, url }]
+            }
         } catch (error) {
             console.error("Error uploading file:", error);
             alert("Error uploading file");
@@ -44,26 +49,15 @@ function FileUpload() {
             {fileUrls.length > 0 && (
                 <div>
                     <h2>Uploaded Files:</h2>
-                    {/* <ul>
-                        {fileUrls.map((url, index) => (
-                            <li key={index}>
-                                <a href={url} target="_blank" rel="noopener noreferrer">
-                                    View File {index + 1}
-                                </a>
-                            </li>
-                        ))}
-                    </ul> */}
+                    
                     <ul>
                         {fileUrls.map((file, index) => (
                             <li key={index}>
-                                {/* 显示图片，使用从 Google Drive 获取的图片 URL */}
-                                <img
-                                    src={file.url} // 使用返回的文件URL
-                                    alt={`File ${index + 1}`}
-                                    style={{ width: '200px', height: 'auto' }} // 调整图片大小
-                                />
+                                
+                                <iframe src= {file.url} width="200" ></iframe>
+
                                 <a href={file.url} target="_blank" rel="noopener noreferrer">
-                                    View File {index + 1}
+                                    View File {file.name}
                                 </a>
                             </li>
                         ))}
