@@ -6,24 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query} from "firebase/firestore";
+import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { db } from "@/app/_utils/firebase"; 
+import { db } from "@/app/_utils/firebase";
 import FileUpload from "./upload";
+import { useRouter } from "next/navigation";
 
 export default function Packages() {
-  
+
   const fetchUserPackages = async (userId) => {
     const q = query(collection(db, "servicePackage"), where("ownerId", "==", userId));
     const querySnapshot = await getDocs(q);
     const fetchedPackages = [];
-    
+
     querySnapshot.forEach((doc) => {
       fetchedPackages.push({ id: doc.id, ...doc.data() });
     });
     setPackages(fetchedPackages);
   };
-  
+
 
   useEffect(() => {
     const auth = getAuth();
@@ -33,8 +34,16 @@ export default function Packages() {
     }
   }, []);
 
-  
+  const router = useRouter();
+
+  const handleEdit = (pkg) => {
+    router.push(`/videographer/packages/${pkg.id}/edit`);
+  };
+
+
   const [packages, setPackages] = useState([]);
+
+  const [uploadedFiles, setUploadedFiles] = useState([]);  // 存储上传的文件信息
 
   const [editPackageId, setEditPackageId] = useState(null); // 记录正在编辑的 package ID
   const [editPackageData, setEditPackageData] = useState(null); // 记录当前编辑的数据
@@ -44,12 +53,52 @@ export default function Packages() {
     title: "",
     description: "",
     price: "",
+    media: [],  // 添加 media 字段
   });
 
-  const handleEdit = (pkg) => {
-    setEditPackageId(pkg.id);
-    setEditPackageData({ ...pkg }); // 复制套餐数据
+  // const handleUploadComplete = (files) => {
+  //   setUploadedFiles(files); // 这里的 files 是 [{ name, id, url }]
+  //   //setNewPackage(prev => ({ ...prev, media: files }));  // 确保 media 也更新
+  //   //console.log("Files received from upload component:", files);
+  // };
+
+  const handleUploadComplete = (files) => {
+    if (editPackageId) {
+      setEditPackageData((prev) => ({
+        ...prev,
+        media: [...(prev.media || []), ...files],
+      }));
+    } else {
+      setUploadedFiles(files);
+    }
   };
+
+  const handleRemoveMedia = async (file) => {
+    if (!editPackageId) return;
+
+    try {
+      // 1. 删除 Google Drive 上的文件（调用 API）
+      await deleteFileFromGoogleDrive(file.id);
+
+      // 2. 从 Firestore 更新 `media` 字段
+      const updatedMedia = editPackageData.media.filter((item) => item.id !== file.id);
+      setEditPackageData((prev) => ({ ...prev, media: updatedMedia }));
+
+      const packageRef = doc(db, "servicePackage", editPackageId);
+      await updateDoc(packageRef, { media: updatedMedia });
+
+      console.log("File removed:", file.name);
+    } catch (error) {
+      console.error("Error removing file:", error);
+    }
+  };
+
+
+
+  // const handleEdit = (pkg) => {
+  //   setEditPackageId(pkg.id);
+  //   setEditPackageData({ ...pkg }); // 复制套餐数据
+  // };
 
   const handleCancelEdit = () => {
     setEditPackageId(null);
@@ -69,7 +118,7 @@ export default function Packages() {
       alert("Price must be 0 or a positive number");
       return;
     }
-  
+
     try {
       const packageRef = doc(db, "servicePackage", editPackageId);
       await updateDoc(packageRef, {
@@ -77,14 +126,14 @@ export default function Packages() {
         description: editPackageData.description,
         price: editPackageData.price,
       });
-  
+
       // 更新本地状态
       setPackages((prevPackages) =>
         prevPackages.map((pkg) =>
           pkg.id === editPackageId ? editPackageData : pkg
         )
       );
-  
+
       setEditPackageId(null); // 退出编辑模式
       setEditPackageData(null);
       console.log("Package updated successfully!");
@@ -92,20 +141,20 @@ export default function Packages() {
       console.error("Error updating package:", error);
     }
   };
-  
+
 
 
   const handleDelete = async (id) => {
     try {
       // 获取要删除的文档引用
       const packageRef = doc(db, "servicePackage", id);
-  
+
       // 删除 Firestore 中的套餐
       await deleteDoc(packageRef);
-  
+
       // 更新本地状态，移除被删除的套餐
       setPackages((prevPackages) => prevPackages.filter((pkg) => pkg.id !== id));
-  
+
       console.log("Package deleted successfully!");
     } catch (error) {
       console.error("Error deleting package:", error);
@@ -125,8 +174,15 @@ export default function Packages() {
       alert("Price must be 0 or a positive number");
       return;
     }
-  
+
+
     if (userId) {
+
+      const packageData = {
+        ...newPackage,
+        ownerId: userId,
+        media: uploadedFiles,  // 存入 Firestore
+      };
       const docRef = await addDoc(collection(db, "servicePackage"), {
         ...packageData,
         ownerId: userId, // 关联当前用户
@@ -138,9 +194,10 @@ export default function Packages() {
         { id: docRef.id, ...packageData, ownerId: userId },
       ]);
 
-      setNewPackage({ title: "", description: "", price: "" }); // 清空输入框
+      setNewPackage({ title: "", description: "", price: "", media: [] }); // 清空输入框
+      setUploadedFiles([]);  // 清空已上传文件
       setIsAdding(false);
-      
+
     } else {
       console.error("User not authenticated");
     }
@@ -150,6 +207,7 @@ export default function Packages() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">My Packages</h1>
+
       <Button onClick={() => setIsAdding(true)} className="mb-6">
         Add New Package
       </Button>
@@ -178,7 +236,7 @@ export default function Packages() {
                 }
               />
             </div>
-            <FileUpload />
+            <FileUpload onUploadComplete={handleUploadComplete} />
             <div>
               <Label htmlFor="price">Price</Label>
               <Input
@@ -198,7 +256,7 @@ export default function Packages() {
         </div>
       )}
 
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
         {packages.map((pkg) => (
           <Card key={pkg.id}>
@@ -229,6 +287,16 @@ export default function Packages() {
                       }
                     />
                   </div>
+
+                  <div className="relative">
+                    <iframe src={file.url} alt={file.name} className="w-full h-32 object-cover" />
+                    <button
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
+                      onClick={() => handleRemoveMedia(file)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                   <div>
                     <Label htmlFor="price">Price</Label>
                     <Input
@@ -252,7 +320,8 @@ export default function Packages() {
                 <>
                   <p className="mb-2">{pkg.description}</p>
                   <p className="mb-4 font-bold">Price: ${pkg.price}</p>
-                  <img src={pkg.media?.[0]?.viewUrl || "/default-image.png"} alt={pkg.title} className="w-full h-32 object-cover mb-4" />
+                  <iframe src={pkg.media?.[0]?.url || "/default-image.png"} alt={pkg.media?.[0]?.name} className="w-full h-32 object-cover mb-4" />
+
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => handleEdit(pkg)}>
                       Edit
