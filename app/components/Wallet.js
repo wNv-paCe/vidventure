@@ -266,6 +266,8 @@ export default function Wallet() {
             onChange={(e) => setRechargeAmount(Number(e.target.value))}
             className="border p-2 mr-2 w-24"
             placeholder="Enter amount"
+            min="0"
+            step={10}
           />
           <button
             onClick={handleRecharge}
@@ -284,12 +286,14 @@ export default function Wallet() {
           onChange={(e) => setWithdrawAmount(e.target.value)}
           className="border p-2 mr-2 w-24"
           placeholder="Amount"
-          step={100}
+          min="0"
+          max={wallet.withdrawableBalance}
+          step={10}
         />
         <button
           onClick={handleWithdraw}
           disabled={wallet.withdrawableBalance <= 0}
-          className={`px-4 py-2 rounded-2xl text-lg font-medium transition-all duration-300 ease-in-out ${
+          className={`px-4 py-2 rounded transition-all duration-300 ease-in-out ${
             wallet.withdrawableBalance > 0
               ? "bg-green-500 text-white hover:bg-green-600"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
