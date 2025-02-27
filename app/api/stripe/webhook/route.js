@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { db } from "@/app/_utils/firebase";
 import { doc, runTransaction, arrayUnion } from "firebase/firestore";
 
+// From GPT
 export const config = {
   api: {
     bodyParser: false, // 禁用默认 JSON 解析，保持原始请求体
@@ -10,6 +11,7 @@ export const config = {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// From Stripe
 export async function POST(req) {
   const sig = req.headers.get("stripe-signature");
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -30,6 +32,7 @@ export async function POST(req) {
     console.error("Webhook verification failed:", err.message);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
+  // End from Stripe
 
   // 处理支付成功事件
   if (event.type === "checkout.session.completed") {

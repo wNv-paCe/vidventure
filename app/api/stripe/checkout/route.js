@@ -19,6 +19,7 @@ export async function POST(req) {
     }
 
     // Stripe Checkout Session
+    // From Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -44,4 +45,5 @@ export async function POST(req) {
     console.error("Stripe Checkout Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  // End from Stripe
 }

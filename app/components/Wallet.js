@@ -136,6 +136,7 @@ export default function Wallet() {
 
   /** 处理添加银行卡 */
   const handleAddCard = async () => {
+    // From GPT
     // 验证持卡人姓名（只允许字母和空格）
     if (!/^[A-Za-z\s]+$/.test(newCard.cardHolder)) {
       alert("Card holder name can only contain letters and spaces.");
@@ -153,6 +154,7 @@ export default function Wallet() {
       alert("Expiry date must be in MM/YY format (e.g., 11/25).");
       return;
     }
+    // End from GPT
 
     const newCardData = {
       id: crypto.randomUUID(),
