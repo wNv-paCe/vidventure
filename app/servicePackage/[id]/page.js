@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase";
 
 export default function ServicePackageDetails() {
   const router = useRouter();
+  //NO.1 What is the role of useParam?
   const { id } = useParams();
   const [servicePackage, setServicePackage] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    //NO.2 WHY ASYNC FUNCTION
     async function fetchServicePackage() {
       try {
         const docRef = doc(db, "servicePackage", id);
@@ -25,6 +28,8 @@ export default function ServicePackageDetails() {
         }
       } catch (error) {
         console.error("Error fetching service package:", error);
+
+        //NO.3 WHAT IS FINALLY
       } finally {
         setLoading(false);
       }

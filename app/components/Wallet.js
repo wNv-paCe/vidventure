@@ -57,6 +57,8 @@ export default function Wallet() {
           withdrawableBalance: 0,
           cards: [],
           transactions: [],
+
+          //N0.4 WHY USING THEN
         }).then(() => {
           setWallet({
             totalBalance: 0,
