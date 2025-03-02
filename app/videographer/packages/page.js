@@ -19,6 +19,7 @@ export default function Packages() {
     const querySnapshot = await getDocs(q);
     const fetchedPackages = [];
 
+      //...（Spread Operator，扩展运算符） 是 JavaScript ES6 引入的一种语法，用于展开数组、对象或函数参数，可以用于复制、合并或传递变量。
     querySnapshot.forEach((doc) => {
       fetchedPackages.push({ id: doc.id, ...doc.data() });
     });
