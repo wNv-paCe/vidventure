@@ -6,7 +6,8 @@ import { db } from "@/app/_utils/firebase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import FileUpload from "../../upload";
+import FileUpload from "../../googleDriveService";
+import googleDriveService from "../../googleDriveService";
 
 export default function EditPackage() {
     const router = useRouter();
@@ -55,7 +56,7 @@ export default function EditPackage() {
                         value={packageData.description}
                         onChange={(e) => setPackageData({ ...packageData, description: e.target.value })}
                     />
-                    <FileUpload onUploadComplete={setUploadedFiles} />
+                    <googleDriveService onUploadComplete={setUploadedFiles} />
                     <div className="flex gap-4">
                         <Button onClick={handleSave}>Save</Button>
                         <Button variant="outline" onClick={handleCancel}>Cancel</Button>

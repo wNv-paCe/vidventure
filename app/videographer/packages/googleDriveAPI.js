@@ -156,6 +156,27 @@ app.post("/upload", upload.array("file"), async (req, res) => {
     }
 });
 
+// 删除文件的 API 路由
+app.delete("/delete/:fileId", async (req, res) => {
+    // 从请求参数中获取文件 ID
+    const fileId = req.params.fileId;
+
+    try {
+        // 使用 Google Drive API 删除文件
+        await drive.files.delete({
+            fileId: fileId,
+        });
+
+        // 返回删除成功的消息
+        res.json({
+            message: "File deleted successfully",
+        });
+    } catch (error) {
+        console.error("Error deleting file:", error);
+        res.status(500).json({ message: "Error deleting file", error: error.message });
+    }
+});
+
 // 启动服务器
 //监听端口，启动服务器
 app.listen(port, () => {

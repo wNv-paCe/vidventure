@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/app/_utils/firebase";
-import FileUpload from "./upload";
+import { uploadFiles, deleteFile, getFilePreviewUrl } from "./googleDriveService";
 import { useRouter } from "next/navigation";
+import MediaManagement from "./mediaManagement";
 
 export default function Packages() {
 
@@ -19,7 +20,7 @@ export default function Packages() {
     const querySnapshot = await getDocs(q);
     const fetchedPackages = [];
 
-      //...（Spread Operator，扩展运算符） 是 JavaScript ES6 引入的一种语法，用于展开数组、对象或函数参数，可以用于复制、合并或传递变量。
+    //...（Spread Operator，扩展运算符） 是 JavaScript ES6 引入的一种语法，用于展开数组、对象或函数参数，可以用于复制、合并或传递变量。
     querySnapshot.forEach((doc) => {
       fetchedPackages.push({ id: doc.id, ...doc.data() });
     });
@@ -179,10 +180,17 @@ export default function Packages() {
 
     if (userId) {
 
+      const uploadedUrls = await uploadFiles(uploadedFiles);  // 这是你上传文件的方法，返回一个文件 URL 数组
+
+      if (!uploadedUrls || uploadedUrls.length === 0) {
+        alert("No files were uploaded successfully");
+        return;
+      }
+
       const packageData = {
         ...newPackage,
         ownerId: userId,
-        media: uploadedFiles,  // 存入 Firestore
+        media: uploadedUrls,  // 存入 Firestore
       };
       const docRef = await addDoc(collection(db, "servicePackage"), {
         ...packageData,
@@ -237,7 +245,8 @@ export default function Packages() {
                 }
               />
             </div>
-            <FileUpload onUploadComplete={handleUploadComplete} />
+            {/* <FileUpload onUploadComplete={handleUploadComplete} /> */}
+            <MediaManagement onFilesChange={handleUploadComplete} />
             <div>
               <Label htmlFor="price">Price</Label>
               <Input
