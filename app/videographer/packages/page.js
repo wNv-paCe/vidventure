@@ -172,17 +172,17 @@ export default function Packages() {
       return;
     }
 
-    if (packageData.price < 0) {
-      alert("Price must be 0 or a positive number");
+    if (packageData.price <= 0) {
+      alert("Price must be a positive number");
       return;
     }
 
 
     if (userId) {
 
-      const uploadedUrls = await uploadFiles(uploadedFiles);  // 这是你上传文件的方法，返回一个文件 URL 数组
+      const uploadedMedia = await uploadFiles(uploadedFiles);  // 这是你上传文件的方法，返回一个文件 URL 数组
 
-      if (!uploadedUrls || uploadedUrls.length === 0) {
+      if (!uploadedMedia || uploadedMedia.length === 0) {
         alert("No files were uploaded successfully");
         return;
       }
@@ -190,7 +190,7 @@ export default function Packages() {
       const packageData = {
         ...newPackage,
         ownerId: userId,
-        media: uploadedUrls,  // 存入 Firestore
+        media: uploadedMedia,  // 存入 Firestore
       };
       const docRef = await addDoc(collection(db, "servicePackage"), {
         ...packageData,

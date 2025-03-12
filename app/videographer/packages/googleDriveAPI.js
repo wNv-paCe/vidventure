@@ -120,6 +120,7 @@ app.post("/upload", upload.array("file"), async (req, res) => {
                 //url: driveResponse.data.webContentLink, // 修改为正确的图片 URL 格式
                 //url: `https://lh3.googleusercontent.com/d/${driveResponse.data.id}`, // 修改为正确的图片 URL 格式
                 url: `https://drive.google.com/file/d/${driveResponse.data.id}/preview`, // 根据id去derive新的preview链接
+                type: file.mimetype.startsWith("video") ? "video" : "image", // ✅ 标记文件类型
             });
         }
 
@@ -132,20 +133,20 @@ app.post("/upload", upload.array("file"), async (req, res) => {
         // 返回文件的 Google Drive URL，包括文件的 ID，name，URL
 
         //No.3
-        res.status(200).json({
-            message: "File uploaded successfully",
-            // fileUrls: fileUrls,  // 返回多个文件的 ID 和 URL
-            fileUrls: fileUrls.map(file => ({
-                id: file.id,
-                name: file.name,
-                url: file.url  // 修改为正确的图片 URL 格式
-            })),
-        });
-
         // res.status(200).json({
         //     message: "File uploaded successfully",
-        //     fileUrls: fileUrls,  // 直接返回原数组
+        //     // fileUrls: fileUrls,  // 返回多个文件的 ID 和 URL
+        //     fileUrls: fileUrls.map(file => ({
+        //         id: file.id,
+        //         name: file.name,
+        //         url: file.url  // 修改为正确的图片 URL 格式
+        //     })),
         // });
+
+        res.status(200).json({
+            message: "File uploaded successfully",
+            fileUrls: fileUrls,  // 直接返回原数组
+        });
 
         //错误处理，如果上传文件失败，返回错误信息
         //500 是 HTTP 状态码，代表 服务器内部错误
@@ -176,6 +177,29 @@ app.delete("/delete/:fileId", async (req, res) => {
         res.status(500).json({ message: "Error deleting file", error: error.message });
     }
 });
+
+// 获取文件的预览 URL
+app.get("/preview/:fileId", async (req, res) => {
+    const fileId = req.params.fileId;
+
+    try {
+        // 先检查文件是否存在
+        await drive.files.get({ fileId });
+
+        // 文件存在，返回预览 URL
+        const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        res.json({ previewUrl });
+    } catch (error) {
+        if (error.response && error.response.status === 404) {
+            console.warn(`File ${fileId} not found.`);
+            return res.status(404).json({ message: "File not found." });
+        }
+
+        console.error("Error fetching file preview:", error);
+        res.status(500).json({ message: "Error fetching file preview", error: error.message });
+    }
+});
+
 
 // 启动服务器
 //监听端口，启动服务器
