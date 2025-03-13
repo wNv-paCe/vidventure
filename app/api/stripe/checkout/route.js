@@ -54,8 +54,8 @@ export async function POST(req) {
         packageId: packageId || "",
         serviceTitle: serviceTitle || "",
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/dashboard?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/orders?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/servicePackage/${packageId}`,
     });
 
     console.log("Created Stripe session:", session);
