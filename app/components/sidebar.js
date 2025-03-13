@@ -7,15 +7,14 @@ import {
   Search,
   FileText,
   MessageSquare,
-  Star,
-  Calendar,
+  ShoppingBag,
   UserCircle,
   Image,
   Clock,
   BookOpen,
   Package,
-  CreditCard,
   DollarSign,
+  ClipboardList,
 } from "lucide-react";
 
 const Sidebar = ({ userType }) => {
@@ -26,6 +25,7 @@ const Sidebar = ({ userType }) => {
     { href: "/client/search", label: "Search Videographers", icon: Search },
     { href: "/client/requests", label: "My Requests", icon: FileText },
     { href: "/client/messages", label: "Messages", icon: MessageSquare },
+    { href: "/client/orders", label: "Orders", icon: ShoppingBag },
     { href: "/client/profile", label: "Profile", icon: UserCircle },
     { href: "/client/wallet", label: "My Wallet", icon: DollarSign },
   ];
@@ -45,6 +45,7 @@ const Sidebar = ({ userType }) => {
       icon: BookOpen,
     },
     { href: "/videographer/messages", label: "Messages", icon: MessageSquare },
+    { href: "/videographer/orders", label: "Orders", icon: ClipboardList },
     { href: "/videographer/profile", label: "Profile", icon: UserCircle },
     { href: "/videographer/wallet", label: "My Wallet", icon: DollarSign },
   ];
