@@ -7,8 +7,19 @@ export async function POST(req) {
   try {
     console.log("Received checkout request");
 
-    const { amount, userId, userType } = await req.json();
-    console.log("Parsed request:", { amount, userId, userType });
+    const {
+      amount,
+      userId,
+      userType,
+      videographerId,
+      packageId,
+      serviceTitle,
+    } = await req.json();
+    console.log("Parsed request:", {
+      amount,
+      userId,
+      userType,
+    });
 
     if (!userId || !userType || amount <= 0) {
       console.error("Invalid amount or user ID:", { amount, userId, userType });
@@ -26,16 +37,25 @@ export async function POST(req) {
         {
           price_data: {
             currency: "cad",
-            product_data: { name: "Wallet Recharge" },
+            product_data: {
+              name: "Service Payment",
+            },
             unit_amount: amount * 100,
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      metadata: { userId, userType, amount },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?canceled=true`,
+      metadata: {
+        userId,
+        userType,
+        amount,
+        videographerId: videographerId || "",
+        packageId: packageId || "",
+        serviceTitle: serviceTitle || "",
+      },
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/dashboard?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/dashboard?canceled=true`,
     });
 
     console.log("Created Stripe session:", session);

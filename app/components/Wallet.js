@@ -19,9 +19,6 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showAddCardForm, setShowAddCardForm] = useState(false);
-  const [rechargeAmount, setRechargeAmount] = useState(10);
-  const [userType, setUserType] = useState("");
-  const router = useRouter();
   const auth = getAuth();
   const user = auth.currentUser;
   const userId = user?.uid;
@@ -40,7 +37,7 @@ export default function Wallet() {
     const userDocRef = doc(db, "users", userId);
     getDoc(userDocRef).then((userSnap) => {
       if (userSnap.exists()) {
-        setUserType(userSnap.data().type || "client");
+        // setUserType(userSnap.data().type || "client"); // Removed
       }
     });
 
@@ -72,36 +69,6 @@ export default function Wallet() {
 
     return () => unsubscribe();
   }, [userId]);
-
-  /** 处理充值逻辑 */
-  const handleRecharge = async () => {
-    if (!userId || rechargeAmount <= 0) {
-      alert("Invalid recharge amount.");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: rechargeAmount,
-          userId: userId,
-          userType: userType,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url; // Redirect to Stripe Checkout
-      } else {
-        alert("Error: Unable to process payment.");
-      }
-    } catch (error) {
-      console.error("Error starting Stripe Checkout:", error);
-      alert("Failed to start checkout.");
-    }
-  };
 
   /** 处理提现逻辑 */
   const handleWithdraw = async () => {
@@ -136,25 +103,20 @@ export default function Wallet() {
 
   /** 处理添加银行卡 */
   const handleAddCard = async () => {
-    // From GPT
-    // 验证持卡人姓名（只允许字母和空格）
     if (!/^[A-Za-z\s]+$/.test(newCard.cardHolder)) {
       alert("Card holder name can only contain letters and spaces.");
       return;
     }
 
-    // 验证卡号后四位（必须是四位数字）
     if (!/^\d{4}$/.test(newCard.last4)) {
       alert("Last 4 digits of card number must be exactly 4 digits.");
       return;
     }
 
-    // 验证有效期（格式 MM/YY）
     if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(newCard.expiry)) {
       alert("Expiry date must be in MM/YY format (e.g., 11/25).");
       return;
     }
-    // End from GPT
 
     const newCardData = {
       id: crypto.randomUUID(),
@@ -258,27 +220,6 @@ export default function Wallet() {
           </p>
         </div>
       </div>
-
-      {/* 只有 type 为 client 才能充值 */}
-      {userType === "client" && (
-        <div className="mt-4">
-          <input
-            type="number"
-            value={rechargeAmount}
-            onChange={(e) => setRechargeAmount(Number(e.target.value))}
-            className="border p-2 mr-2 w-24"
-            placeholder="Enter amount"
-            min="0"
-            step={10}
-          />
-          <button
-            onClick={handleRecharge}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Add Funds
-          </button>
-        </div>
-      )}
 
       {/* 提现功能 */}
       <div className="mt-4">

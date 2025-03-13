@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUserAuth } from "../_utils/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ export default function SignupForm({ userType }) {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
 
   // Capitalize each word in a string
   const capitalizeWords = (name) => {
@@ -89,7 +91,11 @@ export default function SignupForm({ userType }) {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button
-              onClick={() => router.push(`/login/${userType}`)}
+              onClick={() =>
+                router.push(
+                  `/login/${userType}?redirect=${encodeURIComponent(redirect)}`
+                )
+              }
               className="w-full"
             >
               Go to Login
@@ -157,7 +163,9 @@ export default function SignupForm({ userType }) {
             </Button>
             <div className="text-center text-sm">
               <Link
-                href={`/login/${userType}`}
+                href={`/login/${userType}?redirect=${encodeURIComponent(
+                  redirect
+                )}`}
                 className="text-primary hover:underline"
               >
                 Already have an account? Log in
