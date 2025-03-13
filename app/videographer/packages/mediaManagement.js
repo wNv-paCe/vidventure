@@ -23,10 +23,10 @@ function MediaManagement({ onFilesChange, initialFiles = [] }) {
         if (initialFiles.length > 0) {
             console.log("initialFiles", initialFiles);
             const formattedFiles = initialFiles.map(file => ({
-                previewUrl: file.url, // Firebase 文件使用 URL
+                id: file.id || null, // Firebase 文件有 ID，本地上传文件没有
                 name: file.name, // 文件名
                 type: file.type, // 已存储类型
-                id: file.id || null // Firebase 文件有 ID，本地上传文件没有
+                url: file.url, // Firebase 文件使用 URL                
             }));
             setMediaFiles(formattedFiles);
         }
@@ -50,7 +50,7 @@ function MediaManagement({ onFilesChange, initialFiles = [] }) {
         const files = Array.from(event.target.files);
         const newFiles = files.map((file) => ({
             file,
-            previewUrl: URL.createObjectURL(file), // 本地文件需要创建 URL
+            url: URL.createObjectURL(file), // 本地文件需要创建 URL
             type: file.type.startsWith("video") ? "video" : "image",
         }));
         setMediaFiles((prevFiles) => [...prevFiles, ...newFiles]);
@@ -95,16 +95,16 @@ function MediaManagement({ onFilesChange, initialFiles = [] }) {
             {mediaFiles.map((media, index) => (
                 <div key={index} className="relative w-48 h-48">
                     {/* 媒体预览 */}
-                    {media.previewUrl.includes("drive.google.com") ? (
+                    {media.url.includes("drive.google.com") ? (
                         <iframe
-                            src={media.previewUrl}
+                            src={media.url}
                             className="w-full h-full rounded-lg"
                             allowFullScreen
                         ></iframe>
                     ) : media.type === "image" ? (
-                        <img src={media.previewUrl} alt="preview" className="w-full h-full object-cover rounded-lg" />
+                        <img src={media.url} alt="preview" className="w-full h-full object-cover rounded-lg" />
                     ) : (
-                        <video src={media.previewUrl} className="w-full h-full rounded-lg" controls />
+                        <video src={media.url} className="w-full h-full rounded-lg" controls />
                     )}
 
                     {/* 删除按钮（鼠标悬停时显示） */}

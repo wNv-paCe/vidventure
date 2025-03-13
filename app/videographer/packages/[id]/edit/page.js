@@ -79,19 +79,20 @@ export default function EditPackage() {
             newFiles.map(async (file) => {
                 try {
                     const response = await uploadFiles([file]);
-                    return { id: response.id, name: response.name, url: response.url, type: file.type };
+                    return response[0];
                 } catch (error) {
                     console.error("文件上传失败:", error);
                     return null;
                 }
             })
         );
+        console.log("uploadedFileData", uploadedFileData);
         
         const packageRef = doc(db, "servicePackage", id);
         await updateDoc(packageRef, {
             ...packageData,
             //media: uploadedFiles.length ? uploadedFiles : packageData.media,
-            media: [...existingFiles],  // 旧文件 + 新上传文件
+            media: [...existingFiles, ...uploadedFileData],  // 旧文件 + 新上传文件
         });
         router.push("/videographer/packages");
 
