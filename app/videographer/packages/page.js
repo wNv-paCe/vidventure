@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { collection, doc, deleteDoc, addDoc, getDocs, where, updateDoc, query } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/app/_utils/firebase";
-import FileUpload from "./upload";
+import { uploadFiles, deleteFile, getFilePreviewUrl } from "./googleDriveService";
 import { useRouter } from "next/navigation";
+import MediaManagement from "./mediaManagement";
 
 export default function Packages() {
 
@@ -19,6 +20,7 @@ export default function Packages() {
     const querySnapshot = await getDocs(q);
     const fetchedPackages = [];
 
+    //...（Spread Operator，扩展运算符） 是 JavaScript ES6 引入的一种语法，用于展开数组、对象或函数参数，可以用于复制、合并或传递变量。
     querySnapshot.forEach((doc) => {
       fetchedPackages.push({ id: doc.id, ...doc.data() });
     });
@@ -46,7 +48,6 @@ export default function Packages() {
   const [uploadedFiles, setUploadedFiles] = useState([]);  // 存储上传的文件信息
 
   const [editPackageId, setEditPackageId] = useState(null); // 记录正在编辑的 package ID
-  const [editPackageData, setEditPackageData] = useState(null); // 记录当前编辑的数据
 
   const [isAdding, setIsAdding] = useState(false);
   const [newPackage, setNewPackage] = useState({
@@ -56,96 +57,24 @@ export default function Packages() {
     media: [],  // 添加 media 字段
   });
 
-  // const handleUploadComplete = (files) => {
-  //   setUploadedFiles(files); // 这里的 files 是 [{ name, id, url }]
-  //   //setNewPackage(prev => ({ ...prev, media: files }));  // 确保 media 也更新
-  //   //console.log("Files received from upload component:", files);
-  // };
 
   const handleUploadComplete = (files) => {
-    if (editPackageId) {
-      setEditPackageData((prev) => ({
-        ...prev,
-        media: [...(prev.media || []), ...files],
-      }));
-    } else {
-      setUploadedFiles(files);
-    }
+    setUploadedFiles(files);
   };
-
-  const handleRemoveMedia = async (file) => {
-    if (!editPackageId) return;
-
-    try {
-      // 1. 删除 Google Drive 上的文件（调用 API）
-      await deleteFileFromGoogleDrive(file.id);
-
-      // 2. 从 Firestore 更新 `media` 字段
-      const updatedMedia = editPackageData.media.filter((item) => item.id !== file.id);
-      setEditPackageData((prev) => ({ ...prev, media: updatedMedia }));
-
-      const packageRef = doc(db, "servicePackage", editPackageId);
-      await updateDoc(packageRef, { media: updatedMedia });
-
-      console.log("File removed:", file.name);
-    } catch (error) {
-      console.error("Error removing file:", error);
-    }
-  };
-
-
-
-  // const handleEdit = (pkg) => {
-  //   setEditPackageId(pkg.id);
-  //   setEditPackageData({ ...pkg }); // 复制套餐数据
-  // };
-
-  const handleCancelEdit = () => {
-    setEditPackageId(null);
-    setEditPackageData(null);
-  };
-
-
-  const savePackage = async (updatedPackage) => {
-    if (!editPackageData || !editPackageId) return;
-
-    if (!editPackageData.title || !editPackageData.description) {
-      alert("Title and description cannot be empty");
-      return;
-    }
-
-    if (editPackageData.price < 0) {
-      alert("Price must be 0 or a positive number");
-      return;
-    }
-
-    try {
-      const packageRef = doc(db, "servicePackage", editPackageId);
-      await updateDoc(packageRef, {
-        title: editPackageData.title,
-        description: editPackageData.description,
-        price: editPackageData.price,
-      });
-
-      // 更新本地状态
-      setPackages((prevPackages) =>
-        prevPackages.map((pkg) =>
-          pkg.id === editPackageId ? editPackageData : pkg
-        )
-      );
-
-      setEditPackageId(null); // 退出编辑模式
-      setEditPackageData(null);
-      console.log("Package updated successfully!");
-    } catch (error) {
-      console.error("Error updating package:", error);
-    }
-  };
-
 
 
   const handleDelete = async (id) => {
     try {
+
+      // 🔍 找到对应的套餐
+      const packageToDelete = packages.find(pkg => pkg.id === id);
+
+      if (!packageToDelete) {
+        console.error("Package not found!");
+        return;
+      }
+
+
       // 获取要删除的文档引用
       const packageRef = doc(db, "servicePackage", id);
 
@@ -154,6 +83,12 @@ export default function Packages() {
 
       // 更新本地状态，移除被删除的套餐
       setPackages((prevPackages) => prevPackages.filter((pkg) => pkg.id !== id));
+
+      // 🗑️ 删除 Google Drive 上的文件（如果有）
+      if (packageToDelete.media && packageToDelete.media.length > 0) {
+        await Promise.all(packageToDelete.media.map(file => deleteFile(file.id)));
+      }
+
 
       console.log("Package deleted successfully!");
     } catch (error) {
@@ -170,18 +105,25 @@ export default function Packages() {
       return;
     }
 
-    if (packageData.price < 0) {
-      alert("Price must be 0 or a positive number");
+    if (packageData.price <= 0) {
+      alert("Price must be a positive number");
       return;
     }
 
 
     if (userId) {
 
+      const uploadedMedia = await uploadFiles(uploadedFiles);  // 这是你上传文件的方法，返回一个文件 URL 数组
+
+      if (!uploadedMedia || uploadedMedia.length === 0) {
+        alert("No files were uploaded successfully");
+        return;
+      }
+
       const packageData = {
         ...newPackage,
         ownerId: userId,
-        media: uploadedFiles,  // 存入 Firestore
+        media: uploadedMedia,  // 存入 Firestore
       };
       const docRef = await addDoc(collection(db, "servicePackage"), {
         ...packageData,
@@ -236,7 +178,8 @@ export default function Packages() {
                 }
               />
             </div>
-            <FileUpload onUploadComplete={handleUploadComplete} />
+            {/* <FileUpload onUploadComplete={handleUploadComplete} /> */}
+            <MediaManagement onFilesChange={handleUploadComplete} />
             <div>
               <Label htmlFor="price">Price</Label>
               <Input
@@ -264,72 +207,18 @@ export default function Packages() {
               <CardTitle>{pkg.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              {editPackageId === pkg.id ? (
-                // **编辑模式**
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      value={editPackageData.title}
-                      onChange={(e) =>
-                        setEditPackageData({ ...editPackageData, title: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={editPackageData.description}
-                      onChange={(e) =>
-                        setEditPackageData({ ...editPackageData, description: e.target.value })
-                      }
-                    />
-                  </div>
 
-                  <div className="relative">
-                    <iframe src={file.url} alt={file.name} className="w-full h-32 object-cover" />
-                    <button
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
-                      onClick={() => handleRemoveMedia(file)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div>
-                    <Label htmlFor="price">Price</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={editPackageData.price}
-                      onChange={(e) =>
-                        setEditPackageData({ ...editPackageData, price: Number(e.target.value) })
-                      }
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={savePackage}>Save</Button>
-                    <Button variant="outline" onClick={handleCancelEdit}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                // **正常显示模式**
-                <>
-                  <p className="mb-2">{pkg.description}</p>
-                  <p className="mb-4 font-bold">Price: ${pkg.price}</p>
-                  <iframe src={pkg.media?.[0]?.url || "/default-image.png"} alt={pkg.media?.[0]?.name} className="w-full h-32 object-cover mb-4" />
+              <p className="mb-2">{pkg.description}</p>
+              <p className="mb-4 font-bold">Price: ${pkg.price}</p>
+              <iframe src={pkg.media?.[0]?.url || "/default-image.png"} alt={pkg.media?.[0]?.name} className="w-full h-32 object-cover mb-4" />
 
-                  <div className="flex justify-between">
-                    <Button variant="outline" onClick={() => handleEdit(pkg)}>
-                      Edit
-                    </Button>
-                    <Button variant="destructive" onClick={() => handleDelete(pkg.id)}>Delete</Button>
-                  </div>
-                </>
-              )}
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => handleEdit(pkg)}>
+                  Edit
+                </Button>
+                <Button variant="destructive" onClick={() => handleDelete(pkg.id)}>Delete</Button>
+              </div>
+
             </CardContent>
 
 
