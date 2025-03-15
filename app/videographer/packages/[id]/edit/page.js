@@ -6,7 +6,8 @@ import { db } from "@/app/_utils/firebase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { deleteFile, uploadFiles, getFilePreviewUrl} from "../../googleDriveService";
+import { Label } from "@/components/ui/label";
+import { deleteFile, uploadFiles, getFilePreviewUrl } from "../../googleDriveService";
 import MediaManagement from "../../mediaManagement";
 
 
@@ -38,6 +39,16 @@ export default function EditPackage() {
 
     const handleSave = async () => {
         if (!packageData) return;
+
+        if (!packageData.title || !packageData.description) {
+            alert("Title and description cannot be empty");
+            return;
+          }
+      
+          if (packageData.price <= 0) {
+            alert("Price must be a positive number");
+            return;
+          }
 
         // 过滤出仍然存在的文件
         const validFiles = await Promise.all(
@@ -87,7 +98,7 @@ export default function EditPackage() {
             })
         );
         console.log("uploadedFileData", uploadedFileData);
-        
+
         const packageRef = doc(db, "servicePackage", id);
         await updateDoc(packageRef, {
             ...packageData,
@@ -107,15 +118,22 @@ export default function EditPackage() {
             <h1 className="text-3xl font-bold mb-4">Edit Package</h1>
             {packageData ? (
                 <div className="space-y-4">
+                    <Label htmlFor="title">Title</Label>
+                    <Label></Label>
                     <Input
+                        id="title"
                         value={packageData.title}
                         onChange={(e) => setPackageData({ ...packageData, title: e.target.value })}
                     />
+                    <Label htmlFor="description">Description</Label>
                     <Textarea
+                        id="description"
                         value={packageData.description}
                         onChange={(e) => setPackageData({ ...packageData, description: e.target.value })}
                     />
+                    <Label htmlFor="price">Price</Label>
                     <Input
+                        id="price"
                         value={packageData.price}
                         onChange={(e) => setPackageData({ ...packageData, price: e.target.value })}
                     />
