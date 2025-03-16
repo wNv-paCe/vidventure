@@ -16,10 +16,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "../_utils/auth-context";
 import { getAuth, sendEmailVerification } from "firebase/auth";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginForm({ userType }) {
   const { googleSignIn, loginWithEmail } = useUserAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,7 +40,9 @@ export default function LoginForm({ userType }) {
 
       if (result.success) {
         console.log(`${userType} login successfully`);
-        router.push(`/${userType}/dashboard`);
+        router.push(
+          redirect ? decodeURIComponent(redirect) : `/${userType}/dashboard`
+        );
       } else if (
         result.error === "Your email is not verified. Please check your inbox."
       ) {
@@ -82,7 +87,9 @@ export default function LoginForm({ userType }) {
 
       if (result.success) {
         console.log(`${userType} login successfully`);
-        router.push(`/${userType}/dashboard`);
+        router.push(
+          redirect ? decodeURIComponent(redirect) : `/${userType}/dashboard`
+        );
       } else {
         setError(result.error);
       }

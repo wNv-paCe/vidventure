@@ -7,8 +7,19 @@ export async function POST(req) {
   try {
     console.log("Received checkout request");
 
-    const { amount, userId, userType } = await req.json();
-    console.log("Parsed request:", { amount, userId, userType });
+    const {
+      amount,
+      userId,
+      userType,
+      videographerId,
+      packageId,
+      serviceTitle,
+    } = await req.json();
+    console.log("Parsed request:", {
+      amount,
+      userId,
+      userType,
+    });
 
     if (!userId || !userType || amount <= 0) {
       console.error("Invalid amount or user ID:", { amount, userId, userType });
@@ -19,22 +30,32 @@ export async function POST(req) {
     }
 
     // Stripe Checkout Session
+    // From Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
             currency: "cad",
-            product_data: { name: "Wallet Recharge" },
+            product_data: {
+              name: "Service Payment",
+            },
             unit_amount: amount * 100,
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      metadata: { userId, userType, amount },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/wallet?canceled=true`,
+      metadata: {
+        userId,
+        userType,
+        amount,
+        videographerId: videographerId || "",
+        packageId: packageId || "",
+        serviceTitle: serviceTitle || "",
+      },
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/${userType}/orders?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/servicePackage/${packageId}`,
     });
 
     console.log("Created Stripe session:", session);
@@ -44,4 +65,5 @@ export async function POST(req) {
     console.error("Stripe Checkout Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  // End from Stripe
 }
