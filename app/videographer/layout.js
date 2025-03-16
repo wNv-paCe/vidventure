@@ -4,6 +4,7 @@ import { useUserAuth } from "@/app/_utils/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import DashboardLayout from "@/app/components/dashboard-layout";
+import StripeProvider from "./wallet/StripeProvider";
 
 export default function VideographerLayout({ children }) {
   const { user, userType } = useUserAuth();
@@ -23,5 +24,7 @@ export default function VideographerLayout({ children }) {
     );
   }
 
-  return <DashboardLayout userType="videographer">{children}</DashboardLayout>;
+  return <StripeProvider>
+    <DashboardLayout userType="videographer">{children}</DashboardLayout>
+  </StripeProvider>;
 }

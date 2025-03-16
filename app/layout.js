@@ -9,6 +9,7 @@ export const metadata = {
   description: "Professional videography services for your special moments",
 };
 
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

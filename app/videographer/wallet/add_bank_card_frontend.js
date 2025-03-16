@@ -1,50 +1,49 @@
 import { useState } from "react";
-import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 
-const AddBankAccount = () => {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [loading, setLoading] = useState(false);
+const BankAccountForm = ({ stripeAccountId }) => {
+    const [bankAccount, setBankAccount] = useState({
+        accountNumber: "",
+        routingNumber: "",
+        country: "CA",
+        currency: "cad",
+    });
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setLoading(true);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        if (!stripe || !elements) return;
-
-        const { token, error } = await stripe.createToken(elements.getElement(CardElement));
-
-        if (error) {
-            console.error(error);
-            setLoading(false);
-            return;
-        }
-
-        // 发送 token 到后端
-        const response = await fetch("/api/add-bank", {
+        const response = await fetch("/api/add_bank_account", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: token.id }),
+            body: JSON.stringify({ stripeAccountId, ...bankAccount }),
         });
 
         const data = await response.json();
-        setLoading(false);
-
         if (data.success) {
-            alert("银行卡绑定成功！");
+            alert("银行账户绑定成功！");
         } else {
-            alert("绑定失败，请重试。");
+            alert("绑定失败：" + data.error);
         }
     };
 
     return (
         <form onSubmit={handleSubmit}>
-            <CardElement />
-            <button type="submit" disabled={!stripe || loading}>
-                {loading ? "绑定中..." : "绑定银行卡"}
-            </button>
+            <input
+                type="text"
+                placeholder="银行账户号码"
+                value={bankAccount.accountNumber}
+                onChange={(e) => setBankAccount({ ...bankAccount, accountNumber: e.target.value })}
+                required
+            />
+            <input
+                type="text"
+                placeholder="银行路由号码（Routing Number）"
+                value={bankAccount.routingNumber}
+                onChange={(e) => setBankAccount({ ...bankAccount, routingNumber: e.target.value })}
+                required
+            />
+            <button type="submit">绑定银行账户</button>
         </form>
     );
 };
 
-export default AddBankAccount;
+export default BankAccountForm;

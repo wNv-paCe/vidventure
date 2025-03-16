@@ -4,6 +4,8 @@ import { collection, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "fir
 import { db } from "@/app/_utils/firebase"; // Firebase 初始化文件
 import { getAuth } from "firebase/auth";
 import { motion } from "framer-motion";
+import AddBankAccount from "./add_bank_card_frontend";
+import BankAccountForm from "./add_bank_card_frontend";
 
 export default function Wallet({ userId }) {
   const [wallet, setWallet] = useState(null);
@@ -214,37 +216,7 @@ export default function Wallet({ userId }) {
         </div>
       </div>
 
-
-
-      {/* <div className="m-4">
-        <h3 className="font-semibold text-lg mb-4">Bank Cards</h3>
-        <div className="space-y-4">
-
-          <div className="flex flex-wrap gap-4">
-            {wallet.cards.map((card) => (
-              <motion.div
-                key={card.id}
-                className={`relative w-80 h-48 rounded-xl shadow-lg text-white p-6 ${card.brand === 'Visa' ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-yellow-600 to-yellow-800'}`}
-                variants={cardVariants}
-                whileHover="hover"
-                style={{ perspective: 1000 }}
-              >
-                <motion.div className="absolute inset-0 flex flex-col justify-between p-4">
-                  <p className="text-lg font-semibold">{card.brand}</p>
-                  <p className="text-xl font-bold tracking-widest">
-                    **** **** **** {card.last4}
-                  </p>
-                  <div className="flex justify-between text-sm">
-                    <p>Expires {card.expiry}</p>
-                    <p>{card.cardHolder}</p>
-                  </div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-
-        </div>
-      </div> */}
+      <BankAccountForm />
 
       {/* "Add Card" 按钮 */}
       {!showAddCardForm && (
