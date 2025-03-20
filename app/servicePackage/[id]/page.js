@@ -11,7 +11,7 @@ export default function ServicePackageDetails() {
   const { id } = useParams();
   const [servicePackage, setServicePackage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false); // 新增状态
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!id) return;
