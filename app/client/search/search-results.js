@@ -3,9 +3,9 @@
 import React from "react";
 import SearchItem from "./search-item";
 
-export default function SearchResults({ results }) {
+export default function SearchResults({ results, title }) {
   if (!results || results.length === 0) {
-    return <p>No portfolios found.</p>;
+    return <p>No {title} found.</p>;
   }
 
   return (

@@ -88,10 +88,10 @@ export default function VideographerProfile() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.back()}
             className="text-blue-500 hover:text-blue-700 font-semibold"
           >
-            Back to Home
+            Back
           </button>
         </div>
       </header>

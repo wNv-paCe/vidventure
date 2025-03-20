@@ -6,61 +6,83 @@ import { db } from "@/app/_utils/firebase";
 import SearchForm from "./search-form";
 import SearchResults from "./search-results";
 
-// Capitalize the first letter of each word
-const capitalizeWords = (name) => {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
 export default function SearchPage() {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load portfolios from Firestore
-  const fetchPortfolios = async (searchTerm = "") => {
+  // Rename and modify the function
+  const fetchData = async (searchTerm = "") => {
     setLoading(true);
     try {
-      let q;
-      if (searchTerm) {
-        // Capitalize the search term
-        const formattedSearchTerm = capitalizeWords(searchTerm);
+      // 拉全量 portfolios 和 servicePackage
+      const [portfolioSnap, packageSnap] = await Promise.all([
+        getDocs(
+          query(collection(db, "portfolios"), orderBy("createdAt", "desc"))
+        ),
+        getDocs(collection(db, "servicePackage")),
+      ]);
 
-        // Basic search by name
-        q = query(
-          collection(db, "portfolios"),
-          where("fullName", ">=", formattedSearchTerm),
-          where("fullName", "<=", formattedSearchTerm + "\uf8ff")
-        );
-      } else {
-        // Default: get all portfolios
-        q = query(collection(db, "portfolios"), orderBy("createdAt", "desc"));
-      }
-      const querySnapshot = await getDocs(q);
-      const items = querySnapshot.docs.map((doc) => ({
+      let portfolios = portfolioSnap.docs.map((doc) => ({
         id: doc.id,
+        type: "portfolio",
         ...doc.data(),
       }));
-      setPortfolios(items);
+
+      let packages = packageSnap.docs.map((doc) => ({
+        id: doc.id,
+        type: "package",
+        ...doc.data(),
+      }));
+
+      // 如果有searchTerm，统一前端过滤
+      if (searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        portfolios = portfolios.filter(
+          (item) =>
+            item.fullName?.toLowerCase().includes(lowerTerm) ||
+            item.title?.toLowerCase().includes(lowerTerm)
+        );
+
+        packages = packages.filter((item) =>
+          item.title?.toLowerCase().includes(lowerTerm)
+        );
+      }
+
+      // Combine both results
+      setPortfolios([...portfolios, ...packages]);
     } catch (error) {
-      console.error("Error fetching portfolios:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch portfolios on initial load
+  // Update useEffect and SearchForm
   useEffect(() => {
-    fetchPortfolios();
+    fetchData();
   }, []);
+
+  const portfolioItems = portfolios.filter((item) => item.type === "portfolio");
+  const packageItems = portfolios.filter((item) => item.type === "package");
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Search Portfolios</h1>
-      <SearchForm onSearch={fetchPortfolios} />
-      {loading ? <p>Loading...</p> : <SearchResults results={portfolios} />}
+      <h1 className="text-3xl font-bold mb-6">Search</h1>
+      <SearchForm onSearch={fetchData} />
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Portfolios</h2>
+            <SearchResults results={portfolioItems} title="Portfolios" />
+          </section>
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Service Packages</h2>
+            <SearchResults results={packageItems} title="Service Packages" />
+          </section>
+        </>
+      )}
     </div>
   );
 }
