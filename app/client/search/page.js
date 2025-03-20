@@ -6,15 +6,6 @@ import { db } from "@/app/_utils/firebase";
 import SearchForm from "./search-form";
 import SearchResults from "./search-results";
 
-// Capitalize the first letter of each word
-const capitalizeWords = (name) => {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
 export default function SearchPage() {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
