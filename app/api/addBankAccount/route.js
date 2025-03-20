@@ -7,8 +7,8 @@ export async function POST(req) {
 
     try {
         //console.log('req is', req);
-        const { userId, stripeAccountId, accountNumber, routingNumber, email, country, currency } = await req.json();
-        console.log(userId, stripeAccountId, accountNumber, routingNumber, email, country, currency);
+        const { userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency } = await req.json();
+        console.log(userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency);
 
         let finalStripeAccountId = stripeAccountId;
 

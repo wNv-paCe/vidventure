@@ -6,6 +6,7 @@ import { getAuth } from "firebase/auth";
 import { motion } from "framer-motion";
 import AddBankAccount from "./add_bank_card_frontend";
 import BankAccountForm from "./add_bank_card_frontend";
+import WithdrawForm from "./withDrawForm";
 
 //{userID} or {param.userID}, {param} is the object passed from the router,destructuring is used to get the userID from the object
 
@@ -24,12 +25,17 @@ export default function Wallet() {
 
   //new card state
   const [newCard, setNewCard] = useState({
-    brand: "Visa",
-    last4: "",
-    expiry: "",
-    cardHolder: "",
-    type: "Credit",
+    accountNumber: "",
+    routingNumber: "",
+    cardBrand: "",
   });
+  // const [newCard, setNewCard] = useState({
+  //   brand: "Visa",
+  //   last4: "",
+  //   expiry: "",
+  //   cardHolder: "",
+  //   type: "Credit",
+  // });
 
   // || means or, if either of the field is empty, it will return an alert
   const handleAddCard = async () => {
@@ -62,23 +68,50 @@ export default function Wallet() {
     // 清空表单
     //reset the newCard state
     setNewCard({
-      brand: "Visa",
-      last4: "",
-      expiry: "",
-      cardHolder: "",
-      type: "Credit",
+      accountNumber: "",
+      outingNumber: "",
     });
     setShowAddCardForm(false); // 隐藏表单
 
     alert("Card added successfully!");
   };
-//walletRef is the reference to the wallet document in the Firestore
-//arrayRemove is used to remove the card from the cards array
+
+  const handleBankAccountAdded = async (newBankAccount) => {
+    if (!userId) return;
+
+    const newBankData = {
+      id: crypto.randomUUID(), // 生成唯一 ID
+      ...newBankAccount, // 传入的银行卡信息
+    };
+
+    try {
+      // 更新 Firebase
+      const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+      await updateDoc(walletRef, {
+        cards: arrayUnion(newBankData), // 添加银行卡信息到数组
+      });
+
+      // 更新前端状态
+      setWallet((prev) => ({
+        ...prev,
+        cards: [...(prev?.cards || []), newBankData], // 确保数组存在
+      }));
+
+      // 隐藏表单
+      setShowAddCardForm(false);
+    } catch (error) {
+      console.error("Error adding bank account:", error);
+      alert("Failed to add bank account.");
+    }
+  };
+
+  //walletRef is the reference to the wallet document in the Firestore
+  //arrayRemove is used to remove the card from the cards array
   const handleRemoveCard = async (card) => {
     const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
     //alert(card.id);
     await updateDoc(walletRef, { cards: arrayRemove(card) });
-//filter is used to keep the card with the different id from the cards array, which means removing
+    //filter is used to keep the card with the different id from the cards array, which means removing
     setWallet((prev) => ({
       ...prev,
       cards: prev.cards.filter((c) => c.id !== card.id),
@@ -88,9 +121,9 @@ export default function Wallet() {
   const cardVariants = {
     hover: { rotateY: 180, transition: { duration: 0.6 } },
   };
-//userId is the dependency, useEffect will run whenever the userId changes
-//if the dependency is an empty array, it will only run once when the component is mounted
-//if the dependency is not provided, it will run every time the component is rendered or updated, which is not recommended, cause it will cause performance issues
+  //userId is the dependency, useEffect will run whenever the userId changes
+  //if the dependency is an empty array, it will only run once when the component is mounted
+  //if the dependency is not provided, it will run every time the component is rendered or updated, which is not recommended, cause it will cause performance issues
   useEffect(() => {
 
 
@@ -142,19 +175,6 @@ export default function Wallet() {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Wallet</h2>
 
-      {/* 显示余额 */}
-      {/* <div className="mb-4">
-        <p className="text-xl font-bold text-gray-800">
-          Total Balance: <span className="text-blue-600">${wallet.totalBalance.toFixed(2)}</span>
-        </p>
-        <p className="text-lg text-red-500 font-semibold">
-          Locked Amount: <span className="text-red-600">${wallet.lockedAmount.toFixed(2)}</span>
-        </p>
-        <p className="text-lg text-green-600 font-semibold">
-          Available Balance: <span className="text-green-500">${(wallet.totalBalance - wallet.lockedAmount).toFixed(2)}</span>
-        </p>
-      </div> */}
-
       <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
         <h3 className="font-bold text-gray-800 mb-4">Account Balance</h3>
 
@@ -184,6 +204,8 @@ export default function Wallet() {
       {/* 提现按钮 */}
       <div className="flex justify-between mt-6">
         {/* Withdraw Button */}
+
+        <WithdrawForm />
         <button
           onClick={handleWithdraw}
           disabled={wallet.totalBalance - wallet.lockedAmount <= 0}
@@ -211,7 +233,7 @@ export default function Wallet() {
           {wallet.cards.map((card) => (
             <motion.div
               key={card.id}
-              className={`relative w-80 h-48 rounded-xl shadow-lg text-white p-6 ${card.brand === 'Visa' ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-yellow-600 to-yellow-800'} group`}
+              className={`relative w-80 h-48 rounded-xl shadow-lg text-white p-6 ${card.cardBrand === 'Visa' ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-yellow-600 to-yellow-800'} group`}
               whileHover={{ scale: 1.05 }}
             >
               <div className="absolute top-2 right-2 hidden group-hover:block z-10">
@@ -223,22 +245,28 @@ export default function Wallet() {
                 </button>
               </div>
               <div className="absolute inset-0 flex flex-col justify-between p-4">
-                <p className="text-lg font-semibold">{card.brand}</p>
-                <p className="text-xl font-bold tracking-widest">**** **** **** {card.last4}</p>
+                <p className="text-lg font-semibold">{card.cardBrand}</p>
+                <p className="text-xl font-bold tracking-widest">{card.accountNumber}</p>
                 <div className="flex justify-between text-sm">
-                  <p>Expires {card.expiry}</p>
-                  <p>{card.cardHolder}</p>
+                  <p>Routing Number {card.routingNumber}</p>
+                  
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
-      <p>{userId}</p>
-      <BankAccountForm Id= {userId} stripeAccountId= {wallet.stripeAccountID} userEmail={userEmail}/>
+      {/* <p>{userId}</p>
+      <BankAccountForm Id={userId} stripeAccountId={wallet.stripeAccountID} userEmail={userEmail} />
       <p>{wallet.stripeAccountID}</p>
-      <p>{userEmail}</p>
+      <p>{userEmail}</p> */}
+      {showAddCardForm && (
+        <BankAccountForm Id={userId} stripeAccountId={wallet.stripeAccountID} userEmail={userEmail}
+          onSuccess= {handleBankAccountAdded} // 提交成功后隐藏
+          onCancel={() => setShowAddCardForm(false)} // 取消时隐藏
+        />
 
+      )}
       {/* "Add Card" 按钮 */}
       {!showAddCardForm && (
         <button
@@ -248,74 +276,6 @@ export default function Wallet() {
           Add Card
         </button>
       )}
-
-      {/* 📌 添加银行卡表单 */}
-
-      {showAddCardForm && (
-        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-          <h3 className="text-lg font-bold mb-2">Add New Card</h3>
-
-          <label className="block mb-2">
-            Card Holder Name
-            <input
-              type="text"
-              className="w-full mt-1 p-2 border rounded"
-              value={newCard.cardHolder}
-              onChange={(e) => setNewCard({ ...newCard, cardHolder: e.target.value })}
-            />
-          </label>
-
-          <label className="block mb-2">
-            Card Number (Last 4 Digits)
-            <input
-              type="text"
-              className="w-full mt-1 p-2 border rounded"
-              maxLength="4"
-              pattern="\d{4}"
-              value={newCard.last4}
-              onChange={(e) => setNewCard({ ...newCard, last4: e.target.value })}
-            />
-          </label>
-
-          <label className="block mb-2">
-            Expiry Date (MM/YY)
-            <input
-              type="text"
-              className="w-full mt-1 p-2 border rounded"
-              placeholder="MM/YY"
-              value={newCard.expiry}
-              onChange={(e) => setNewCard({ ...newCard, expiry: e.target.value })}
-            />
-          </label>
-
-          <label className="block mb-2">
-            Card Brand
-            <select
-              className="w-full mt-1 p-2 border rounded"
-              value={newCard.brand}
-              onChange={(e) => setNewCard({ ...newCard, brand: e.target.value })}
-            >
-              <option value="Visa">Visa</option>
-              <option value="MasterCard">MasterCard</option>
-            </select>
-          </label>
-
-          <button
-            className="mt-4 mr-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={handleAddCard}
-          >
-            Add Card
-          </button>
-
-          <button
-            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            onClick={() => setShowAddCardForm(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
 
 
     </div>
