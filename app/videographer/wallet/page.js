@@ -4,16 +4,25 @@ import { collection, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "fir
 import { db } from "@/app/_utils/firebase"; // Firebase 初始化文件
 import { getAuth } from "firebase/auth";
 import { motion } from "framer-motion";
+import AddBankAccount from "./add_bank_card_frontend";
+import BankAccountForm from "./add_bank_card_frontend";
 
-export default function Wallet({ userId }) {
+//{userID} or {param.userID}, {param} is the object passed from the router,destructuring is used to get the userID from the object
+
+export default function Wallet() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [showAddCardForm, setShowAddCardForm] = useState(false); // 控制表单显示
   const auth = getAuth();
   const user = auth.currentUser;
-  userId = user.uid;
+  const userId = user?.uid;
+  const userEmail = user?.email;
+  //const userStripeAccountID = wallet.stripeAccountID;
+  //console.log(wallet);
+  //console.log(user);
 
+  //new card state
   const [newCard, setNewCard] = useState({
     brand: "Visa",
     last4: "",
@@ -22,30 +31,36 @@ export default function Wallet({ userId }) {
     type: "Credit",
   });
 
+  // || means or, if either of the field is empty, it will return an alert
   const handleAddCard = async () => {
     if (!newCard.last4 || !newCard.expiry || !newCard.cardHolder) {
       alert("Please fill in all required fields.");
       return;
     }
-
+    //crypto is a built-in module in Node.js, it is used to generate random id
+    //...newCard is used to spread the newCard object, then add the id to it
     const newCardData = {
       id: crypto.randomUUID(),
       ...newCard,
     };
 
     // 更新 Firestore
+    //arrayUnion is used to add the new card to the existing cards array, but it will not add the same card twice
     const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
     await updateDoc(walletRef, {
       cards: arrayUnion(newCardData),
     });
 
     // 更新前端状态
+    //...prev is for keeping all the previous state, and only updating the cards array
+    //the reason to use arrow function is to update the state based on the previous state in case of any concurrency issues
     setWallet((prev) => ({
       ...prev,
       cards: [...prev.cards, newCardData],
     }));
 
     // 清空表单
+    //reset the newCard state
     setNewCard({
       brand: "Visa",
       last4: "",
@@ -57,12 +72,13 @@ export default function Wallet({ userId }) {
 
     alert("Card added successfully!");
   };
-
+//walletRef is the reference to the wallet document in the Firestore
+//arrayRemove is used to remove the card from the cards array
   const handleRemoveCard = async (card) => {
     const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
     //alert(card.id);
     await updateDoc(walletRef, { cards: arrayRemove(card) });
-
+//filter is used to keep the card with the different id from the cards array, which means removing
     setWallet((prev) => ({
       ...prev,
       cards: prev.cards.filter((c) => c.id !== card.id),
@@ -72,7 +88,9 @@ export default function Wallet({ userId }) {
   const cardVariants = {
     hover: { rotateY: 180, transition: { duration: 0.6 } },
   };
-
+//userId is the dependency, useEffect will run whenever the userId changes
+//if the dependency is an empty array, it will only run once when the component is mounted
+//if the dependency is not provided, it will run every time the component is rendered or updated, which is not recommended, cause it will cause performance issues
   useEffect(() => {
 
 
@@ -81,7 +99,7 @@ export default function Wallet({ userId }) {
       const walletSnap = await getDoc(walletDocRef);
 
       if (walletSnap.exists()) {
-        console.log("Wallet data:", walletSnap.data());
+        //console.log("Wallet data:", walletSnap.data());
         setWallet(walletSnap.data());  // 更新钱包数据
       } else {
         console.log("No wallet data found.");
@@ -90,7 +108,7 @@ export default function Wallet({ userId }) {
       setLoading(false);  // 停止加载
     };
 
-    console.log("userId:", userId);
+    //console.log("userId:", userId);
 
     fetchWallet();
   }, [userId]);
@@ -144,6 +162,7 @@ export default function Wallet({ userId }) {
         <div className="relative w-full bg-gray-200 rounded-full h-6 overflow-hidden">
           <div
             className="absolute top-0 left-0 h-6 bg-red-500"
+            // `$` means template string, it is used to insert the value of the variable into the string
             style={{ width: `${(wallet.lockedAmount / wallet.totalBalance) * 100}%` }}
           ></div>
           <div
@@ -153,6 +172,8 @@ export default function Wallet({ userId }) {
         </div>
 
         {/* 金额信息 */}
+        {/* toFixed is used to round the number to the specified decimal places */}
+
         <div className="flex justify-between text-sm mt-2">
           <p className="text-blue-600 font-bold">Total: ${wallet.totalBalance.toFixed(2)}</p>
           <p className="text-red-500 font-semibold">Locked: ${wallet.lockedAmount.toFixed(2)}</p>
@@ -213,38 +234,10 @@ export default function Wallet({ userId }) {
           ))}
         </div>
       </div>
-
-
-
-      {/* <div className="m-4">
-        <h3 className="font-semibold text-lg mb-4">Bank Cards</h3>
-        <div className="space-y-4">
-
-          <div className="flex flex-wrap gap-4">
-            {wallet.cards.map((card) => (
-              <motion.div
-                key={card.id}
-                className={`relative w-80 h-48 rounded-xl shadow-lg text-white p-6 ${card.brand === 'Visa' ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-yellow-600 to-yellow-800'}`}
-                variants={cardVariants}
-                whileHover="hover"
-                style={{ perspective: 1000 }}
-              >
-                <motion.div className="absolute inset-0 flex flex-col justify-between p-4">
-                  <p className="text-lg font-semibold">{card.brand}</p>
-                  <p className="text-xl font-bold tracking-widest">
-                    **** **** **** {card.last4}
-                  </p>
-                  <div className="flex justify-between text-sm">
-                    <p>Expires {card.expiry}</p>
-                    <p>{card.cardHolder}</p>
-                  </div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-
-        </div>
-      </div> */}
+      <p>{userId}</p>
+      <BankAccountForm Id= {userId} stripeAccountId= {wallet.stripeAccountID} userEmail={userEmail}/>
+      <p>{wallet.stripeAccountID}</p>
+      <p>{userEmail}</p>
 
       {/* "Add Card" 按钮 */}
       {!showAddCardForm && (
