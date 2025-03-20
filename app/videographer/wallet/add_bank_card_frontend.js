@@ -1,17 +1,21 @@
+
 import { useState } from "react";
 
-const BankAccountForm = ({ stripeAccountId }) => {
+const BankAccountForm = ({ Id, stripeAccountId, userEmail }) => {
     const [bankAccount, setBankAccount] = useState({
+        userId: Id,
         accountNumber: "",
         routingNumber: "",
+        email: userEmail,
         country: "CA",
         currency: "cad",
     });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log(bankAccount);
 
-        const response = await fetch("/api/add_bank_account", {
+        const response = await fetch("/api/addBankAccount", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ stripeAccountId, ...bankAccount }),
@@ -36,7 +40,7 @@ const BankAccountForm = ({ stripeAccountId }) => {
             />
             <input
                 type="text"
-                placeholder="银行路由号码（Routing Number）"
+                placeholder="银行路由号码(Routing Number)"
                 value={bankAccount.routingNumber}
                 onChange={(e) => setBankAccount({ ...bankAccount, routingNumber: e.target.value })}
                 required
