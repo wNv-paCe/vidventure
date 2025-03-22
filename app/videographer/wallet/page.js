@@ -204,9 +204,9 @@ export default function Wallet() {
       {/* 提现按钮 */}
       <div className="flex justify-between mt-6">
         {/* Withdraw Button */}
-
-        <WithdrawForm />
-        <button
+        <p>{wallet.stripeAccountID}</p>
+        <WithdrawForm stripeAccountId={wallet.stripeAccountID} />
+        {/* <button
           onClick={handleWithdraw}
           disabled={wallet.totalBalance - wallet.lockedAmount <= 0}
           className={`px-6 py-3 rounded-full text-lg font-semibold transition-all duration-300 ease-in-out ${wallet.totalBalance - wallet.lockedAmount > 0
@@ -215,7 +215,7 @@ export default function Wallet() {
             }`}
         >
           <i className="fas fa-arrow-down mr-2"></i> Withdraw
-        </button>
+        </button> */}
 
         {/* TopUp Button */}
         <button
@@ -249,7 +249,7 @@ export default function Wallet() {
                 <p className="text-xl font-bold tracking-widest">{card.accountNumber}</p>
                 <div className="flex justify-between text-sm">
                   <p>Routing Number {card.routingNumber}</p>
-                  
+
                 </div>
               </div>
             </motion.div>
@@ -262,7 +262,7 @@ export default function Wallet() {
       <p>{userEmail}</p> */}
       {showAddCardForm && (
         <BankAccountForm Id={userId} stripeAccountId={wallet.stripeAccountID} userEmail={userEmail}
-          onSuccess= {handleBankAccountAdded} // 提交成功后隐藏
+          onSuccess={handleBankAccountAdded} // 提交成功后隐藏
           onCancel={() => setShowAddCardForm(false)} // 取消时隐藏
         />
 
