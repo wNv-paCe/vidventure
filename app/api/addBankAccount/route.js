@@ -25,8 +25,9 @@ export async function POST(req) {
             }
 
             const data = await response.json();
-            console.log(data);
+            // console.log(data);
             finalStripeAccountId = data.stripeAccountId; // 获取新创建的 Account ID
+            
             console.log("finalStripeAccountId is", finalStripeAccountId);
         }
 
@@ -41,7 +42,7 @@ export async function POST(req) {
             },
         });
 
-        return NextResponse.json({ success: true, bankAccount });
+        return NextResponse.json({ success: true, bankAccount, finalStripeAccountId:finalStripeAccountId });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

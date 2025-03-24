@@ -98,7 +98,7 @@ export default function Wallet() {
       }));
 
       // 隐藏表单
-      setShowAddCardForm(false);
+      //setShowAddCardForm(false);
     } catch (error) {
       console.error("Error adding bank account:", error);
       alert("Failed to add bank account.");

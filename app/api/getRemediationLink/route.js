@@ -3,7 +3,7 @@ const stripe = require("stripe")(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
 export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
-        const accountId = searchParams.get("accountId");
+        const accountId = searchParams.get("stripeAccountId");
 
         // 获取 Stripe 账户信息
         const account = await stripe.accounts.retrieve(accountId);
@@ -15,8 +15,8 @@ export async function GET(req) {
             // 生成 Remediation Link
             const accountLink = await stripe.accountLinks.create({
                 account: accountId,
-                refresh_url: "https://yourwebsite.com/kyc-failed",
-                return_url: "https://yourwebsite.com/dashboard",
+                refresh_url: "http://localhost:3000/videographer/wallet",
+                return_url: "http://localhost:3000/videographer/wallet",
                 type: "account_update"
             });
 
