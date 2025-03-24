@@ -14,6 +14,7 @@ export async function GET(req) {
     const accounts = await stripe.accounts.listExternalAccounts(stripeAccountId, {
       object: "bank_account",
     });
+    
 
     return new Response(JSON.stringify({ accounts: accounts.data }), { status: 200 });
   } catch (error) {

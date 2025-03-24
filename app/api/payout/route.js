@@ -33,7 +33,19 @@ export async function POST(req) {
         //     destination: bankAccountId,
         // });
 
-        return new Response(JSON.stringify({ success: true, transfer }), { status: 200 });
+        const payout = await stripe.payouts.create({
+            amount: payoutAmount, // 金额（以分为单位）
+            currency: "cad",
+            destination: bankAccountId, // 银行账户 ID
+          }, {
+            stripeAccount: stripeAccountId // 指定是哪个 Connected Account
+          });
+        // const accounts = await stripe.accounts.listExternalAccounts(stripeAccountId, {
+        //     object: "bank_account",
+        // });
+        // console.log(accounts);
+
+        return new Response(JSON.stringify({ success: true, payout }), { status: 200 });
     } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
