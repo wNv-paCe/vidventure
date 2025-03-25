@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import KYCModal from "./KYCModal";
 
-export default function WithdrawForm({ stripeAccountId, bankCards, userId, availableBalance }) {
+export default function WithdrawForm({ stripeAccountId, bankCards, userId, availableBalance, onSuccess }) {
     const [amount, setAmount] = useState("");
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState("");
@@ -101,6 +101,8 @@ export default function WithdrawForm({ stripeAccountId, bankCards, userId, avail
             const data = await res.json();
             if (res.ok) {
                 setMessage("Withdrawal successful!");
+                onSuccess(availableBalance - amount);
+                setAmount("");
             } else {
                 setMessage(data.error || "Withdrawal failed.");
             }
