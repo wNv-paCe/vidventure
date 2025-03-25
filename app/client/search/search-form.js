@@ -14,7 +14,7 @@ export default function SearchForm({ onSearch }) {
     <form onSubmit={handleSubmit} className="flex items-center space-x-4 mb-6">
       <input
         type="text"
-        placeholder="Search by photographer's name"
+        placeholder="Search by name or title"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="border rounded-md p-2 w-full"

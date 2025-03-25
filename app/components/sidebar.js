@@ -22,7 +22,7 @@ const Sidebar = ({ userType }) => {
 
   const clientLinks = [
     { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/client/search", label: "Search Videographers", icon: Search },
+    { href: "/client/search", label: "Search", icon: Search },
     { href: "/client/requests", label: "My Requests", icon: FileText },
     { href: "/client/messages", label: "Messages", icon: MessageSquare },
     { href: "/client/orders", label: "Orders", icon: ShoppingBag },
