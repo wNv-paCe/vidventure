@@ -9,12 +9,12 @@ import {
   query,
   where,
   onSnapshot,
-  updateDoc,
   doc,
   getDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import ContactButton from "@/app/components/contact-button";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function OrdersList() {
   const [orders, setOrders] = useState([]);
@@ -25,24 +25,26 @@ export default function OrdersList() {
   const router = useRouter();
 
   useEffect(() => {
-    const user = auth.currentUser;
-
-    if (!user) {
-      setError("You must be logged in to view your orders.");
-      setLoading(false);
-      return;
-    }
-
-    // Fetch userType from Firestore
-    const userRef = doc(db, "users", user.uid);
-    const unsubscribeUser = onSnapshot(userRef, (snapshot) => {
-      const userData = snapshot.data();
-      if (userData) {
-        setUserType(userData.type);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setError("You must be logged in to view your orders.");
+        setLoading(false);
+        return;
       }
+
+      // Fetch userType from Firestore after auth is ready
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribeUser = onSnapshot(userRef, (snapshot) => {
+        const userData = snapshot.data();
+        if (userData) {
+          setUserType(userData.type);
+        }
+      });
+
+      return () => unsubscribeUser();
     });
 
-    return () => unsubscribeUser();
+    return () => unsubscribe();
   }, []);
 
   const fetchOtherUserName = async (userId) => {
@@ -112,13 +114,32 @@ export default function OrdersList() {
     if (!confirmCompletion) return;
 
     try {
-      const orderRef = doc(db, "transactions", orderId);
-      await updateDoc(orderRef, { status: "completed" });
+      const user = auth.currentUser;
+      if (!user) throw new Error("User must be logged in");
+      const token = await user.getIdToken();
+      console.log("User Token:", token);
 
-      alert("Order successfully marked as completed.");
+      const response = await fetch(
+        "https://us-central1-vidventure-83846.cloudfunctions.net/completeOrder",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ transactionId: orderId }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      alert("Order completed and funds unlocked.");
     } catch (err) {
-      console.error("Error completing order:", err.message);
-      alert("Failed to complete order. Please try again.");
+      console.error("Error completing order via cloud function:", err.message);
+      alert("Failed to complete order.");
     }
   };
 
