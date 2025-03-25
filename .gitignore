@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 /app/videographer/packages/keys
 /app/videographer/packages/uploads
+app/api/deleteConnectAccount/deleteStripeAccount.js
+app/api/deleteConnectAccount/deleteStripeAccount.js
+/app/api/deleteConnectAccount
