@@ -49,14 +49,12 @@ export default function Wallet() {
       } else {
         console.warn("No wallet found, creating one...");
         setDoc(walletRef, {
-          totalBalance: 0,
           lockedAmount: 0,
           withdrawableBalance: 0,
           cards: [],
           transactions: [],
         }).then(() => {
           setWallet({
-            totalBalance: 0,
             lockedAmount: 0,
             withdrawableBalance: 0,
             cards: [],
@@ -189,29 +187,7 @@ export default function Wallet() {
       {/* 账户余额展示 */}
       <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
         <h3 className="font-bold text-gray-800 mb-4">Account Balance</h3>
-        <div className="relative w-full bg-gray-200 rounded-full h-6 overflow-hidden">
-          <div
-            className="absolute top-0 left-0 h-6 bg-red-500"
-            style={{
-              width: `${(wallet.lockedAmount / wallet.totalBalance) * 100}%`,
-            }}
-          ></div>
-          <div
-            className="absolute top-0 left-0 h-6 bg-green-500"
-            style={{
-              width: `${
-                ((wallet.totalBalance - wallet.lockedAmount) /
-                  wallet.totalBalance) *
-                100
-              }%`,
-            }}
-          ></div>
-        </div>
-
         <div className="flex justify-between text-sm mt-2">
-          <p className="text-blue-600 font-bold">
-            Total: ${wallet.totalBalance.toFixed(2)}
-          </p>
           <p className="text-red-500 font-semibold">
             Locked: ${wallet.lockedAmount.toFixed(2)}
           </p>
