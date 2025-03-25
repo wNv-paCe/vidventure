@@ -3,12 +3,12 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 export async function POST(req) {
-    const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
     try {
         //console.log('req is', req);
-        const { userId, stripeAccountId, accountNumber, routingNumber, email, country, currency } = await req.json();
-        console.log(userId, stripeAccountId, accountNumber, routingNumber, email, country, currency);
+        const { userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency } = await req.json();
+        console.log(userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency);
 
         let finalStripeAccountId = stripeAccountId;
 
@@ -25,8 +25,9 @@ export async function POST(req) {
             }
 
             const data = await response.json();
-            console.log(data);
+            // console.log(data);
             finalStripeAccountId = data.stripeAccountId; // 获取新创建的 Account ID
+            
             console.log("finalStripeAccountId is", finalStripeAccountId);
         }
 
@@ -41,7 +42,7 @@ export async function POST(req) {
             },
         });
 
-        return NextResponse.json({ success: true, bankAccount });
+        return NextResponse.json({ success: true, bankAccount, finalStripeAccountId:finalStripeAccountId });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
