@@ -15,8 +15,8 @@ export async function GET(req) {
             // 生成 Remediation Link
             const accountLink = await stripe.accountLinks.create({
                 account: accountId,
-                refresh_url: "http://localhost:3000/videographer/wallet",
-                return_url: "http://localhost:3000/videographer/wallet",
+                refresh_url: `${process.env.NEXT_PUBLIC_BASE_URL}/videographer/wallet`,
+                return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/videographer/wallet`,
                 type: "account_update"
             });
 
