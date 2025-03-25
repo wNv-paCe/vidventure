@@ -1,8 +1,10 @@
 import Stripe from "stripe";
+import { db } from "@/app/_utils/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore"; // Firestore 更新
 
 export async function POST(req) {
     // 从请求体中提取参数
-    const { stripeAccountId, bankAccountId, amount } = await req.json();
+    const { stripeAccountId, bankAccountId, amount, userId } = await req.json();
     console.log(stripeAccountId, bankAccountId, amount);
 
     if (!bankAccountId) {
@@ -37,13 +39,17 @@ export async function POST(req) {
             amount: payoutAmount, // 金额（以分为单位）
             currency: "cad",
             destination: bankAccountId, // 银行账户 ID
-          }, {
+        }, {
             stripeAccount: stripeAccountId // 指定是哪个 Connected Account
-          });
+        });
         // const accounts = await stripe.accounts.listExternalAccounts(stripeAccountId, {
         //     object: "bank_account",
         // });
         // console.log(accounts);
+        console.log(userId);
+        const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");
+        //alert(card.id);
+        await updateDoc(walletRef, { withdrawableBalance: increment(-amount) });
 
         return new Response(JSON.stringify({ success: true, payout }), { status: 200 });
     } catch (error) {
