@@ -58,7 +58,6 @@ export async function POST(req) {
       await runTransaction(db, async (transaction) => {
         const receiverWalletSnap = await transaction.get(receiverWalletRef);
         let receiverWalletData = receiverWalletSnap.data() || {
-          totalBalance: 0,
           withdrawableBalance: 0,
           lockedAmount: 0,
           transactions: [],
