@@ -105,9 +105,9 @@ export default function Requests() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">My Requests</h1>
+      <h1 className="text-3xl font-bold mb-6">My Studio Visit</h1>
       {requests.length === 0 ? (
-        <p className="text-gray-500">You have no requests.</p>
+        <p className="text-gray-500">You have no Studio Visit.</p>
       ) : (
         <div className="space-y-4">
           {requests.map((request) => (
