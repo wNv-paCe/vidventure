@@ -38,6 +38,7 @@ export async function POST(req) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    console.log("Metadata:", session.metadata);
     const { userId, videographerId, packageId, serviceTitle } =
       session.metadata || {};
 
@@ -93,5 +94,6 @@ export async function POST(req) {
     }
   }
 
-  return new Response(JSON.stringify({ received: false }), { status: 400 });
+  console.log("Received event type:", event.type);
+  return new Response(JSON.stringify({ received: true }), { status: 200 });
 }
