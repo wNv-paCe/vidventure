@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "firebase/firestore";
 import { db } from "@/app/_utils/firebase"; // Firebase 初始化文件
 import { getAuth } from "firebase/auth";
 import { motion } from "framer-motion";
@@ -12,6 +12,7 @@ import WithdrawForm from "./withDrawForm";
 
 export default function Wallet() {
   const [wallet, setWallet] = useState(null);
+  //const [availableBalanceUpdated, setAvailableBalanceUpdated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [showAddCardForm, setShowAddCardForm] = useState(false); // 控制表单显示
@@ -124,27 +125,47 @@ export default function Wallet() {
   //userId is the dependency, useEffect will run whenever the userId changes
   //if the dependency is an empty array, it will only run once when the component is mounted
   //if the dependency is not provided, it will run every time the component is rendered or updated, which is not recommended, cause it will cause performance issues
+  // useEffect(() => {
+
+
+  //   const fetchWallet = async () => {
+  //     const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
+  //     const walletSnap = await getDoc(walletDocRef);
+
+  //     if (walletSnap.exists()) {
+  //       //console.log("Wallet data:", walletSnap.data());
+  //       setWallet(walletSnap.data());  // 更新钱包数据
+  //     } else {
+  //       console.log("No wallet data found.");
+  //     }
+
+  //     setLoading(false);  // 停止加载
+  //   };
+
+  //   //console.log("userId:", userId);
+
+  //   fetchWallet();
+  // }, [userId, availableBalanceUpdated]);
+
   useEffect(() => {
-
-
-    const fetchWallet = async () => {
-      const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
-      const walletSnap = await getDoc(walletDocRef);
-
+    if (!userId) return;
+  
+    const walletDocRef = doc(db, "users", userId, "wallet", "defaultWallet");
+  
+    // 监听 Firestore 数据变更
+    const unsubscribe = onSnapshot(walletDocRef, (walletSnap) => {
       if (walletSnap.exists()) {
-        //console.log("Wallet data:", walletSnap.data());
-        setWallet(walletSnap.data());  // 更新钱包数据
+        setWallet(walletSnap.data());
       } else {
         console.log("No wallet data found.");
+        setWallet(null);
       }
-
-      setLoading(false);  // 停止加载
-    };
-
-    //console.log("userId:", userId);
-
-    fetchWallet();
-  }, [userId]);
+      setLoading(false);
+    });
+  
+    // 清理监听器，防止内存泄漏
+    return () => unsubscribe();
+  }, [userId]);  // 仅在 userId 变化时重新绑定监听
 
 
 
@@ -179,25 +200,34 @@ export default function Wallet() {
         <h3 className="font-bold text-gray-800 mb-4">Account Balance</h3>
 
         {/* 进度条 */}
+        {/* 进度条 */}
         <div className="relative w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+          {/* 红色部分 (lockedAmount) */}
           <div
             className="absolute top-0 left-0 h-6 bg-red-500"
-            // `$` means template string, it is used to insert the value of the variable into the string
-            style={{ width: `${(wallet.lockedAmount / wallet.totalBalance) * 100}%` }}
+            style={{ width: `${(wallet.lockedAmount / (wallet.lockedAmount + wallet.withdrawableBalance)) * 100}%` }}
           ></div>
+
+          {/* 绿色部分 (withdrawableBalance) */}
           <div
-            className="absolute top-0 left-0 h-6 bg-green-500"
-            style={{ width: `${((wallet.totalBalance - wallet.lockedAmount) / wallet.totalBalance) * 100}%` }}
+            className="absolute top-0 h-6 bg-green-500"
+            style={{
+              width: `${(wallet.withdrawableBalance / (wallet.lockedAmount + wallet.withdrawableBalance)) * 100}%`,
+              left: `${(wallet.lockedAmount / (wallet.lockedAmount + wallet.withdrawableBalance)) * 100}%` // 让绿色紧跟红色后面
+            }}
           ></div>
         </div>
+
+
 
         {/* 金额信息 */}
         {/* toFixed is used to round the number to the specified decimal places */}
 
         <div className="flex justify-between text-sm mt-2">
-          <p className="text-blue-600 font-bold">Total: ${wallet.totalBalance.toFixed(2)}</p>
           <p className="text-red-500 font-semibold">Locked: ${wallet.lockedAmount.toFixed(2)}</p>
-          <p className="text-green-600 font-semibold">Available: ${(wallet.totalBalance - wallet.lockedAmount).toFixed(2)}</p>
+          <p className="text-blue-600 font-bold">Total: ${(wallet.lockedAmount + wallet.withdrawableBalance).toFixed(2)}</p>
+
+          <p className="text-green-600 font-semibold">Available: ${wallet.withdrawableBalance.toFixed(2)}</p>
         </div>
       </div>
 
@@ -205,12 +235,16 @@ export default function Wallet() {
       <div className="flex justify-center my-10">
         {/* Withdraw Button */}
         {/* <p>{wallet.stripeAccountID}</p> */}
-        
+        {/* {userId} {wallet.withdrawableBalance} */}
+        {userId && wallet?.withdrawableBalance !== undefined && (
           <WithdrawForm
             stripeAccountId={wallet.stripeAccountID}
             bankCards={wallet.cards}
+            userId={userId}
+            availableBalance={wallet.withdrawableBalance}
             className="my-6 mx-auto"
           />
+        )}
         {/* <button
           onClick={handleWithdraw}
           disabled={wallet.totalBalance - wallet.lockedAmount <= 0}

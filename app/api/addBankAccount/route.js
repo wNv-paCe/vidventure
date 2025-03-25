@@ -8,13 +8,13 @@ export async function POST(req) {
     try {
         //console.log('req is', req);
         const { userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency } = await req.json();
-        console.log(userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency);
+        //console.log(userId, stripeAccountId, accountNumber, routingNumber, cardBrand, email, country, currency);
 
         let finalStripeAccountId = stripeAccountId;
 
         if (!finalStripeAccountId) {
             console.log("Creating Stripe account");
-            response = await fetch("http://localhost:3000/api/createStripeAccount", { // ❗ 使用完整 URL
+            response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/createStripeAccount`, { // ❗ 使用完整 URL
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userId, country, email }),
@@ -28,7 +28,7 @@ export async function POST(req) {
             // console.log(data);
             finalStripeAccountId = data.stripeAccountId; // 获取新创建的 Account ID
             
-            console.log("finalStripeAccountId is", finalStripeAccountId);
+            //console.log("finalStripeAccountId is", finalStripeAccountId);
         }
 
         // 绑定银行卡

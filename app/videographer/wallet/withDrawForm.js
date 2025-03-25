@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import KYCModal from "./KYCModal";
 
-export default function WithdrawForm({ stripeAccountId, bankCards }) {
+export default function WithdrawForm({ stripeAccountId, bankCards, userId, availableBalance }) {
     const [amount, setAmount] = useState("");
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState("");
@@ -21,7 +21,7 @@ export default function WithdrawForm({ stripeAccountId, bankCards }) {
     };
 
     // 获取绑定的银行卡列表
-    console.log(stripeAccountId);
+    //console.log(stripeAccountId);
     useEffect(() => {
         async function fetchAccounts() {
             if (!stripeAccountId) {
@@ -29,8 +29,8 @@ export default function WithdrawForm({ stripeAccountId, bankCards }) {
             } // 确保 stripeAccountId 存在
 
             try {
-                console.log(stripeAccountId);
-                const res = await fetch(`/api/getBankAccount?stripeAccountId=${stripeAccountId}`);
+                //console.log(stripeAccountId);
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/getBankAccount?stripeAccountId=${stripeAccountId}`);
                 const data = await res.json();
 
                 if (data.error) {
@@ -59,6 +59,10 @@ export default function WithdrawForm({ stripeAccountId, bankCards }) {
             setMessage("Please enter a valid amount.");
             return;
         }
+        if(amount > availableBalance){
+            setMessage("you little piece of shit, don't you see your available balance?");
+            return;
+        }
         if (!selectedAccount) {
             setMessage("Please select a bank account.");
             return;
@@ -69,12 +73,12 @@ export default function WithdrawForm({ stripeAccountId, bankCards }) {
 
         try {
 
-            const res_reme = await fetch(`/api/getRemediationLink?stripeAccountId=${stripeAccountId}`);
+            const res_reme = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/getRemediationLink?stripeAccountId=${stripeAccountId}`);
             const data_reme = await res_reme.json();
             if (data_reme.success && data_reme.requiresKYC) {
 
                 setShowModal(true);
-                console.log(data_reme.remediationLink);
+                //console.log(data_reme.remediationLink);
                 setRemediationLink(data_reme.remediationLink);
 
 
@@ -82,15 +86,17 @@ export default function WithdrawForm({ stripeAccountId, bankCards }) {
                 // 传递 `handleModalClose` 作为 `Modal` 关闭的回调
                 return;
             }
-            const res = await fetch("/api/payout", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     stripeAccountId: stripeAccountId,
                     bankAccountId: selectedAccount,
                     amount: parseFloat(amount),
+                    userId: userId,
                 }),
             });
+            //console.log(userId,availableBalance);
 
             const data = await res.json();
             if (res.ok) {

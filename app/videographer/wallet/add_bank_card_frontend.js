@@ -28,9 +28,9 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(bankAccount);
+        // console.log(bankAccount);
 
-        const response_bank = await fetch("/api/addBankAccount", {
+        const response_bank = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/addBankAccount`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ stripeAccountId, ...bankAccount }),
@@ -40,13 +40,13 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
         const data_bank = await response_bank.json();
         if (data_bank.success) {
             alert("The bank account is successfully bound!");
-            console.log(data_bank);
-            const res = await fetch(`/api/getRemediationLink?stripeAccountId=${data_bank.finalStripeAccountId}`);
+            // console.log(data_bank);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/getRemediationLink?stripeAccountId=${data_bank.finalStripeAccountId}`);
             const data = await res.json();
             if (data.success && data.requiresKYC) {
 
                 setShowModal(true);
-                console.log(data.remediationLink);
+                //console.log(data.remediationLink);
                 setRemediationLink(data.remediationLink);
 
                 

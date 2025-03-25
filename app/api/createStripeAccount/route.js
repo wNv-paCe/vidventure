@@ -27,15 +27,6 @@ export async function POST(req) {
 
         console.log("Created Stripe Custom Account:", account.id);
 
-        // 2️⃣ 生成 Onboarding 认证链接
-        // const accountLink = await stripe.accountLinks.create({
-        //     account: account.id,
-        //     refresh_url: "http://localhost:3000/videographer/dashboard", // KYC 失败后返回的链接
-        //     return_url: "http://localhost:3000/videographer/wallet", // KYC 通过后返回的链接
-        //     type: "account_update", // 让用户提交 KYC
-        // });
-
-        // console.log("Stripe Remediation Link:", accountLink.url);
 
         // 3️⃣ 更新 Firestore 用户信息
         const walletRef = doc(db, "users", userId, "wallet", "defaultWallet");

@@ -49,14 +49,12 @@ export default function Wallet() {
       } else {
         console.warn("No wallet found, creating one...");
         setDoc(walletRef, {
-          totalBalance: 0,
           lockedAmount: 0,
           withdrawableBalance: 0,
           cards: [],
           transactions: [],
         }).then(() => {
           setWallet({
-            totalBalance: 0,
             lockedAmount: 0,
             withdrawableBalance: 0,
             cards: [],
