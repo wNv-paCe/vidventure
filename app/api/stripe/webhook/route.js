@@ -1,7 +1,6 @@
 import Stripe from "stripe";
 import { db } from "@/app/_utils/firebase";
 import { doc, runTransaction } from "firebase/firestore";
-import { buffer } from "micro";
 
 export const config = {
   api: {
@@ -23,7 +22,8 @@ export async function POST(req) {
 
   let event;
   try {
-    const buf = await buffer(req);
+    const rawBody = await req.arrayBuffer();
+    const buf = Buffer.from(rawBody);
     event = stripe.webhooks.constructEvent(buf, sig, endpointSecret);
   } catch (err) {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
