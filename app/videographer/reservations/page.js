@@ -89,7 +89,7 @@ export default function Reservations() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Reservations</h1>
+      <h1 className="text-3xl font-bold mb-6">My Studio Visit Reservations</h1>
       <div className="space-y-4">
         {reservations.map((reservation) => (
           <Card key={reservation.id}>

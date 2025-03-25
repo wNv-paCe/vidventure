@@ -112,7 +112,7 @@ export default function CreateRequest({
       {isModalVisible && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-96 p-6">
-            <h2 className="text-lg font-bold mb-4">Create Request</h2>
+            <h2 className="text-lg font-bold mb-4">Create a Studio Visit</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
