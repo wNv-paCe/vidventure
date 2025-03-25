@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { db } from "@/app/_utils/firebase";
-import { doc, runTransaction, arrayUnion } from "firebase/firestore";
+import { doc, runTransaction } from "firebase/firestore";
 
 export const config = {
   api: {
@@ -60,10 +60,10 @@ export async function POST(req) {
         let receiverWalletData = receiverWalletSnap.data() || {
           withdrawableBalance: 0,
           lockedAmount: 0,
-          transactions: [],
         };
 
         if (
+          receiverWalletData.transactions &&
           receiverWalletData.transactions.some((txn) => txn.id === session.id)
         ) {
           return;
@@ -82,14 +82,7 @@ export async function POST(req) {
         });
 
         transaction.update(receiverWalletRef, {
-          totalBalance: receiverWalletData.totalBalance + netAmount,
           lockedAmount: receiverWalletData.lockedAmount + netAmount,
-          transactions: arrayUnion({
-            id: session.id,
-            amount: netAmount,
-            type: "service_payment",
-            timestamp: new Date().toISOString(),
-          }),
         });
       });
 
