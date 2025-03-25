@@ -16,6 +16,16 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
     const [showModal, setShowModal] = useState(false); // 控制模态框的显示
     const [remediationLink, setRemediationLink] = useState(""); // 用于存储 remediationLink
 
+    // ✅ 等用户手动关闭模态框后再调用 `onSuccess`
+    const handleModalClose = () => {
+        setShowModal(false);
+        onSuccess({
+            accountNumber: bankAccount.accountNumber,
+            routingNumber: bankAccount.routingNumber,
+            cardBrand: bankAccount.cardBrand
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log(bankAccount);
@@ -25,6 +35,7 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ stripeAccountId, ...bankAccount }),
         });
+
 
         const data_bank = await response_bank.json();
         if (data_bank.success) {
@@ -37,14 +48,29 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
                 setShowModal(true);
                 console.log(data.remediationLink);
                 setRemediationLink(data.remediationLink);
-    
+
+                
+
+                // 传递 `handleModalClose` 作为 `Modal` 关闭的回调
+                return;
+
             }
             onSuccess({ accountNumber: bankAccount.accountNumber, routingNumber: bankAccount.routingNumber, cardBrand: bankAccount.cardBrand }); // 把银行卡数据传给父组件
 
         } else {
-            alert("Binding Failure:" + data.error);
+            alert("Binding Failure:" + data_bank.error);
         }
     };
+
+    // 👇 在 Modal 关闭时调用 onSuccess
+    // const handleModalClose = () => {
+    //     setShowModal(false);
+    //     onSuccess({
+    //         accountNumber: bankAccount.accountNumber,
+    //         routingNumber: bankAccount.routingNumber,
+    //         cardBrand: bankAccount.cardBrand
+    //     });
+    // };
 
     return (
         <div>
@@ -110,8 +136,10 @@ const BankAccountForm = ({ Id, stripeAccountId, userEmail, onSuccess, onCancel }
             {/* 在银行卡绑定成功后显示模态框 */}
             {showModal && (
                 <KYCModal
-                    remediationLink= {remediationLink}
-                    onClose={() => setShowModal(false)}
+                    remediationLink={remediationLink}
+                    onClose={handleModalClose}
+                    onSuccess={onSuccess}
+                    bankAccount={bankAccount}
                 />
             )}
         </div>

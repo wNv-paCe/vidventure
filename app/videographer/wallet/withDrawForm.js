@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
+import KYCModal from "./KYCModal";
 
-export default function WithdrawForm({ stripeAccountId }) {
+export default function WithdrawForm({ stripeAccountId, bankCards }) {
     const [amount, setAmount] = useState("");
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+
+    const [showModal, setShowModal] = useState(false); // 控制模态框的显示
+    const [remediationLink, setRemediationLink] = useState(""); // 用于存储 remediationLink
+
+    const handleModalClose = () => {
+        setShowModal(false);
+        // onSuccess({
+        //     accountNumber: bankAccount.accountNumber,
+        //     routingNumber: bankAccount.routingNumber,
+        //     cardBrand: bankAccount.cardBrand
+        // });
+    };
 
     // 获取绑定的银行卡列表
     console.log(stripeAccountId);
@@ -37,7 +50,7 @@ export default function WithdrawForm({ stripeAccountId }) {
         }
 
         fetchAccounts();
-    }, [stripeAccountId]); // 依赖 stripeAccountId，确保获取正确数据
+    }, [stripeAccountId, bankCards]); // 依赖 stripeAccountId，确保获取正确数据
 
 
     // 处理提现请求
@@ -55,6 +68,20 @@ export default function WithdrawForm({ stripeAccountId }) {
         setMessage("");
 
         try {
+
+            const res_reme = await fetch(`/api/getRemediationLink?stripeAccountId=${stripeAccountId}`);
+            const data_reme = await res_reme.json();
+            if (data_reme.success && data_reme.requiresKYC) {
+
+                setShowModal(true);
+                console.log(data_reme.remediationLink);
+                setRemediationLink(data_reme.remediationLink);
+
+
+
+                // 传递 `handleModalClose` 作为 `Modal` 关闭的回调
+                return;
+            }
             const res = await fetch("/api/payout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -79,32 +106,40 @@ export default function WithdrawForm({ stripeAccountId }) {
     };
 
     return (
-        <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md space-y-4">
-            <h2 className="text-xl font-bold">Withdraw Funds</h2>
-            <input
-                type="number"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full p-2 border rounded"
-            />
-            <select
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                className="w-full p-2 border rounded"
-            >
-                {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.bank_name} - {acc.last4}</option>
-                ))}
-            </select>
-            <button
-                onClick={handleWithdraw}
-                className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                disabled={loading}
-            >
-                {loading ? "Processing..." : "Withdraw"}
-            </button>
-            {message && <p className="text-center text-red-500">{message}</p>}
+        <div>
+            <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md space-y-4">
+                <h2 className="text-xl font-bold">Withdraw Funds</h2>
+                <input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full p-2 border rounded"
+                />
+                <select
+                    value={selectedAccount}
+                    onChange={(e) => setSelectedAccount(e.target.value)}
+                    className="w-full p-2 border rounded"
+                >
+                    {accounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.bank_name} - {acc.last4}</option>
+                    ))}
+                </select>
+                <button
+                    onClick={handleWithdraw}
+                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    disabled={loading}
+                >
+                    {loading ? "Processing..." : "Withdraw"}
+                </button>
+                {message && <p className="text-center text-red-500">{message}</p>}
+            </div>
+            {showModal && (
+                <KYCModal
+                    remediationLink={remediationLink}
+                    onClose={handleModalClose}
+                />
+            )}
         </div>
     );
 }

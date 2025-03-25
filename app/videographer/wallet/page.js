@@ -98,7 +98,7 @@ export default function Wallet() {
       }));
 
       // 隐藏表单
-      //setShowAddCardForm(false);
+      setShowAddCardForm(false);
     } catch (error) {
       console.error("Error adding bank account:", error);
       alert("Failed to add bank account.");
@@ -202,10 +202,15 @@ export default function Wallet() {
       </div>
 
       {/* 提现按钮 */}
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-center my-10">
         {/* Withdraw Button */}
-        <p>{wallet.stripeAccountID}</p>
-        <WithdrawForm stripeAccountId={wallet.stripeAccountID} />
+        {/* <p>{wallet.stripeAccountID}</p> */}
+        
+          <WithdrawForm
+            stripeAccountId={wallet.stripeAccountID}
+            bankCards={wallet.cards}
+            className="my-6 mx-auto"
+          />
         {/* <button
           onClick={handleWithdraw}
           disabled={wallet.totalBalance - wallet.lockedAmount <= 0}
@@ -218,12 +223,12 @@ export default function Wallet() {
         </button> */}
 
         {/* TopUp Button */}
-        <button
+        {/* <button
           onClick={handleTopUp} // 假设你已经实现了充值功能
           className="px-6 py-3 rounded-full text-lg font-semibold bg-blue-500 text-white hover:bg-blue-600 transition-all duration-300 ease-in-out"
         >
           <i className="fas fa-arrow-up mr-2"></i> Top Up
-        </button>
+        </button> */}
       </div>
 
 

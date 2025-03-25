@@ -9,7 +9,7 @@ export async function POST(req) {
         return new Response(JSON.stringify({ error: "No bank card is bound, please add at least one." }), { status: 400 });
     }
 
-    const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
     try {
         const payoutAmount = parseInt(amount * 100); // $10 => 1000 cents

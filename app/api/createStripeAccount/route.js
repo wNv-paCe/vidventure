@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"; // Next.js 响应
 
 export async function POST(req) {
     // ✅ 使用安全的环境变量
-    const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
     try {
         // ✅ 解析 JSON 请求体
