@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 
 export default function Schedule() {
   const scheduleItems = [
-    { id: 1, date: "2023-06-15", time: "10:00 AM", event: "Wedding Shoot" },
-    { id: 2, date: "2023-06-17", time: "2:00 PM", event: "Corporate Event" },
+    { id: 1, date: "2025-04-15", time: "10:00 AM", event: "Wedding Shoot" },
+    { id: 2, date: "2025-05-17", time: "2:00 PM", event: "Corporate Event" },
     {
       id: 3,
-      date: "2023-06-20",
+      date: "2025-07-20",
       time: "11:00 AM",
       event: "Product Photography",
+    },
+    {
+      id: 4,
+      date: "2025-08-04",
+      time: "9:00 AM",
+      event: "Birthday party Photography",
     },
   ];
 
