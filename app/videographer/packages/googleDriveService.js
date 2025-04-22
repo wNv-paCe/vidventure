@@ -8,7 +8,7 @@ export const uploadFiles = async (files) => {
     });
 
     try {
-        const response = await axios.post("http://localhost:5000/upload", formData, {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/googleDriveUpload`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
