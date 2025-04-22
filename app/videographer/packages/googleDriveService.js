@@ -8,7 +8,7 @@ export const uploadFiles = async (files) => {
     });
 
     try {
-        const response = await axios.post("http://localhost:5000/upload", formData, {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/googleDriveAPI`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
@@ -29,8 +29,8 @@ export const uploadFiles = async (files) => {
 // 删除文件功能
 export const deleteFile = async (fileId) => {
     try {
-        await axios.get(`http://localhost:5000/preview/${fileId}`);
-        const response = await axios.delete(`http://localhost:5000/delete/${fileId}`);
+        await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/googleDriveAPI?fileId=${fileId}`);
+        const response = await axios.delete(`${process.env.NEXT_PUBLIC_BASE_URL}/api/googleDriveAPI?fileId=${fileId}`);
         console.log("File deleted:", response.data);
         return response.data;  // 返回删除后的结果
     } catch (error) {
@@ -46,7 +46,7 @@ export const deleteFile = async (fileId) => {
 // 获取文件预览 URL
 export const getFilePreviewUrl = async (fileId) => {
     try {
-        const response = await axios.get(`http://localhost:5000/preview/${fileId}`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/googleDriveAPI?fileId=${fileId}`);
         return response.data.previewUrl; // 确保返回的是 previewUrl
     } catch (error) {
         if (error.response && error.response.status === 404) {
